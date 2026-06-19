@@ -36,6 +36,7 @@ This guide complements the foundation-wide policies and guides:
 In this guide:
 
 - `iceberg_version`: the final Iceberg Rust version, like `0.9.1`.
+- `iceberg_minor_version`: the final Iceberg Rust minor version, like `0.9`.
 - `rc`: the numeric release candidate voting round, like `2`.
 - `rc_tag`: the git tag for a release candidate, like `v0.9.1-rc.2`.
 - `rc_dist_dir`: the ASF dev distribution directory, like `apache-iceberg-rust-0.9.1-rc2`.
@@ -121,9 +122,27 @@ This version is the final version, not the release candidate version.
 
 - Rust core and Python binding: bump version in root `Cargo.toml` under `[workspace.package]`.
 
-### Update docs
+### Create release branch
 
-Update `CHANGELOG.md` by drafting a new release [note on GitHub Releases](https://github.com/apache/iceberg-rust/releases/new).
+Creating the release branch introduces the cut-off for changes to be released.
+It allows release-specific changes to be drafted with focus,
+and avoids concurrent merges complicating the process.
+
+Create the release branch by checking out the commit that bumped the crate versions above.
+The branch name follows the pattern `<major>.<minor>.x` (e.g., `0.9.x`, `0.10.x`).
+
+```shell
+git switch -c 0.10.x
+```
+
+Pushing commits to this branch automatically generates changelog notes
+in the GitHub Actions job summary via the "Generate Changelog Notes" workflow.
+
+### Update changelog
+
+The ["Generate Changelog Notes"](https://github.com/apache/iceberg-rust/actions/workflows/generate_changelog_notes.yml) workflow runs automatically on each push to the release branch
+and outputs draft notes to the GitHub Actions job summary.
+Copy the notes from the job summary into `CHANGELOG.md`.
 
 ### Generate dependencies list
 
