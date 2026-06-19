@@ -36,6 +36,7 @@ This guide complements the foundation-wide policies and guides:
 In this guide:
 
 - `iceberg_version`: the final Iceberg Rust version, like `0.9.1`.
+- `iceberg_minor_version`: the final Iceberg Rust minor version, like `0.9`.
 - `rc`: the numeric release candidate voting round, like `2`.
 - `rc_tag`: the git tag for a release candidate, like `v0.9.1-rc.2`.
 - `rc_dist_dir`: the ASF dev distribution directory, like `apache-iceberg-rust-0.9.1-rc2`.
@@ -120,6 +121,22 @@ Bump all components' version in the project to the new Iceberg Rust version.
 This version is the final version, not the release candidate version.
 
 - Rust core and Python binding: bump version in root `Cargo.toml` under `[workspace.package]`.
+
+### Create release branch
+
+Creating the release branch introduces the cut-off for changes to be released.
+It allows release-specific changes to be drafted with focus,
+and avoids concurrent merges complicating the process.
+
+Create the release branch by checking out the commit that bumped the crate versions above.
+The branch name follows the pattern `v<minor>` (e.g., `v0.9`, `v0.10`).
+
+```shell
+git switch -c v0.9
+```
+
+Pushing commits to this branch automatically generates changelog notes
+in the GitHub Actions job summary via the "Generate Changelog Notes" workflow.
 
 ### Update docs
 
