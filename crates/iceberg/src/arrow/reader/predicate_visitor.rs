@@ -651,6 +651,20 @@ impl BoundPredicateVisitor for PredicateConverter<'_> {
 ///
 /// The Arrow compute kernels that we use must match the type exactly, so first cast the literal
 /// into the type of the batch we read from Parquet before sending it to the compute kernel.
+/// FOLLOW-UP: this casts the literal DOWN to the file column's type, and `cast` defaults to
+/// `safe: true`, so a literal outside the file type's range becomes NULL instead of failing.
+/// Every comparison against a NULL literal is then NULL, which the filter treats as no-match --
+/// so the scan silently returns zero rows.
+///
+/// This is reachable on a spec-legal promotion, not just a broken file. Widening an `int` column
+/// to `long` leaves older files physically `int`; `v < 5000000000` against such a file returns 0
+/// rows rather than all of them, because the literal does not fit in `i32`.
+///
+/// Casting the column up to the schema type instead would be correct (the predicate is bound to
+/// the table schema, so the comparison belongs at that type) at the cost of a per-batch cast.
+/// Deciding the answer statically is the cheaper alternative -- when the literal is out of the
+/// column's range the outcome is fixed by the operator alone, e.g. `<` is always true and `==`
+/// always false -- but needs per-operator reasoning.
 fn try_cast_literal(
     literal: &Arc<dyn ArrowDatum + Send + Sync>,
     column_type: &DataType,

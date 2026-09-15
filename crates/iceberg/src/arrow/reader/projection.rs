@@ -36,6 +36,15 @@ use crate::spec::{NameMapping, NestedField, PrimitiveType, Schema, Type};
 use crate::{Error, ErrorKind};
 
 impl ArrowReader {
+    /// The Iceberg field ids a scan's filter predicate references.
+    pub(super) fn collect_predicate_field_ids(predicate: &BoundPredicate) -> Result<Vec<i32>> {
+        let mut collector = CollectFieldIdVisitor {
+            field_ids: HashSet::default(),
+        };
+        visit(&mut collector, predicate)?;
+        Ok(collector.field_ids.into_iter().collect())
+    }
+
     pub(super) fn build_field_id_set_and_map(
         parquet_schema: &SchemaDescriptor,
         arrow_schema: &ArrowSchemaRef,
@@ -89,38 +98,23 @@ impl ArrowReader {
         }
     }
 
+    /// `predicate_field_ids` are the ids the scan's filter references. They are type-checked but
+    /// not projected: a filter column is read from the file to evaluate the predicate, so an
+    /// unreadable type there is just as wrong as in the projection, but it must not be added to
+    /// the returned mask or it would appear in the output batch.
+    ///
+    /// They are a separate argument because they are not a subset of `field_ids` --
+    /// `collect_scan_field_ids` (`crate::scan`) derives `project_field_ids` from the selected
+    /// column names alone, so `select(["a"]).filter(b > ...)` never mentions `b` here otherwise.
     pub(super) fn get_arrow_projection_mask(
         field_ids: &[i32],
+        predicate_field_ids: &[i32],
         iceberg_schema_of_task: &Schema,
         parquet_schema: &SchemaDescriptor,
         arrow_schema: &ArrowSchemaRef,
         use_fallback: bool, // Position-based fallback: file lacks embedded field IDs and no name mapping assigned any
     ) -> Result<ProjectionMask> {
-        fn type_promotion_is_valid(
-            file_type: Option<&PrimitiveType>,
-            projected_type: Option<&PrimitiveType>,
-        ) -> bool {
-            match (file_type, projected_type) {
-                (Some(lhs), Some(rhs)) if lhs == rhs => true,
-                (Some(PrimitiveType::Int), Some(PrimitiveType::Long)) => true,
-                (Some(PrimitiveType::Float), Some(PrimitiveType::Double)) => true,
-                (
-                    Some(PrimitiveType::Decimal {
-                        precision: file_precision,
-                        scale: file_scale,
-                    }),
-                    Some(PrimitiveType::Decimal {
-                        precision: requested_precision,
-                        scale: requested_scale,
-                    }),
-                ) if requested_precision >= file_precision && file_scale == requested_scale => true,
-                // Uuid will be store as Fixed(16) in parquet file, so the read back type will be Fixed(16).
-                (Some(PrimitiveType::Fixed(16)), Some(PrimitiveType::Uuid)) => true,
-                _ => false,
-            }
-        }
-
-        if field_ids.is_empty() {
+        if field_ids.is_empty() && predicate_field_ids.is_empty() {
             return Ok(ProjectionMask::all());
         }
 
@@ -138,26 +132,33 @@ impl ArrowReader {
         }
 
         if use_fallback {
-            // Position-based projection necessary because file lacks embedded field IDs
+            // Position-based projection necessary because file lacks embedded field IDs.
+            // Nothing is type-checked on this path, so `predicate_field_ids` has nothing to
+            // contribute -- see the FOLLOW-UP note on the function.
+            if field_ids.is_empty() {
+                return Ok(ProjectionMask::all());
+            }
             Self::get_arrow_projection_mask_fallback(field_ids, parquet_schema)
         } else {
             // Field-ID-based projection using embedded field IDs from Parquet metadata
 
             // Parquet's columnar format requires leaf-level (not top-level struct/list/map) projection
-            let mut leaf_field_ids = vec![];
-            for field_id in field_ids {
-                let field = iceberg_schema_of_task.field_by_id(*field_id);
-                if let Some(field) = field {
-                    Self::include_leaf_field_id(field, &mut leaf_field_ids);
+            let leaves_of = |ids: &[i32]| {
+                let mut leaves = vec![];
+                for field_id in ids {
+                    if let Some(field) = iceberg_schema_of_task.field_by_id(*field_id) {
+                        Self::include_leaf_field_id(field, &mut leaves);
+                    }
                 }
-            }
+                leaves
+            };
 
             Self::get_arrow_projection_mask_with_field_ids(
-                &leaf_field_ids,
+                &leaves_of(field_ids),
+                &leaves_of(predicate_field_ids),
                 iceberg_schema_of_task,
                 parquet_schema,
                 arrow_schema,
-                type_promotion_is_valid,
             )
         }
     }
@@ -166,61 +167,126 @@ impl ArrowReader {
     /// For iceberg-java compatibility with ParquetSchemaUtil.pruneColumns().
     fn get_arrow_projection_mask_with_field_ids(
         leaf_field_ids: &[i32],
+        predicate_leaf_field_ids: &[i32],
         iceberg_schema_of_task: &Schema,
         parquet_schema: &SchemaDescriptor,
         arrow_schema: &ArrowSchemaRef,
-        type_promotion_is_valid: fn(Option<&PrimitiveType>, Option<&PrimitiveType>) -> bool,
     ) -> Result<ProjectionMask> {
         let mut column_map = HashMap::new();
         let fields = arrow_schema.fields();
         // HashSet for O(1) membership checks instead of O(n) slice scans.
+        //
+        // `checked_field_id_set` is the union of the projected and filtered leaves: every leaf
+        // whose type must be validated. It drives the pre-projection below (a leaf's type is
+        // only available once it has been converted) and the type-check pass. The returned mask
+        // is still built from `leaf_field_ids` alone, so filter-only columns are validated
+        // without being read into the output batch.
         let leaf_field_id_set: HashSet<i32> = leaf_field_ids.iter().copied().collect();
+        let checked_field_id_set: HashSet<i32> = leaf_field_id_set
+            .iter()
+            .chain(predicate_leaf_field_ids)
+            .copied()
+            .collect();
 
         // Pre-project only the fields that have been selected, possibly avoiding converting
         // some Arrow types that are not yet supported.
-        let mut projected_fields: HashMap<arrow_schema::FieldRef, i32> = HashMap::new();
+        //
+        // The ids seen here are recorded by leaf index for the second pass to reuse, rather
+        // than in a map keyed by the `FieldRef`: Arrow hashes a `Field` by
+        // name/type/nullability/metadata and `Arc<Field>` delegates to that, so two
+        // structurally identical leaves -- which Parquet and Arrow both permit, and which
+        // `apply_name_mapping_to_arrow_schema` can even assign the same id -- would collapse
+        // into one entry, and the second pass would then type-check one leaf while projecting
+        // another. Both passes visit leaves in the same order, so the index is a stable,
+        // collision-free key.
+        let mut projected_leaf_ids: Vec<Option<i32>> = vec![];
         let projected_arrow_schema = ArrowSchema::new_with_metadata(
-            fields.filter_leaves(|_, f| {
-                f.metadata()
+            fields.filter_leaves(|idx, f| {
+                let field_id = f
+                    .metadata()
                     .get(PARQUET_FIELD_ID_META_KEY)
-                    .and_then(|field_id| i32::from_str(field_id).ok())
-                    .is_some_and(|field_id| {
-                        projected_fields.insert((*f).clone(), field_id);
-                        leaf_field_id_set.contains(&field_id)
-                    })
+                    .and_then(|field_id| i32::from_str(field_id).ok());
+
+                debug_assert_eq!(idx, projected_leaf_ids.len(), "leaf visit order changed");
+                projected_leaf_ids.resize(idx + 1, None);
+                projected_leaf_ids[idx] = field_id;
+
+                field_id.is_some_and(|field_id| checked_field_id_set.contains(&field_id))
             }),
             arrow_schema.metadata().clone(),
         );
         let iceberg_schema = arrow_schema_to_schema(&projected_arrow_schema)?;
 
-        fields.filter_leaves(|idx, field| {
-            let Some(field_id) = projected_fields.get(field).cloned() else {
+        // Collect the columns whose file type cannot be promoted to the projected type and fail
+        // once the closure has returned, rather than skipping them: skipping makes such a
+        // column indistinguishable from one that is genuinely absent from the file, and the
+        // NULL-filling below (and in `RecordBatchTransformer`) would then silently mask
+        // real values that are on disk but unreadable at the projected type.
+        //
+        // Accumulated rather than returned from the closure because `filter_leaves` yields
+        // `bool`. Arrow does expose `try_filter_leaves`, so reporting from inside the closure
+        // is possible; it would mean threading `Result` through both passes for no gain over
+        // collecting, and collecting has the advantage of naming every bad column at once.
+        let mut type_mismatches: Vec<String> = vec![];
+
+        fields.filter_leaves(|idx, _field| {
+            let Some(field_id) = projected_leaf_ids.get(idx).copied().flatten() else {
                 return false;
             };
 
-            let iceberg_field = iceberg_schema_of_task.field_by_id(field_id);
-            let parquet_iceberg_field = iceberg_schema.field_by_id(field_id);
-
-            if iceberg_field.is_none() || parquet_iceberg_field.is_none() {
+            // This closure visits every leaf carrying a parseable field id, not just the
+            // requested ones: `projected_leaf_ids` above records the id before the
+            // `checked_field_id_set` test. `iceberg_schema` is built from the pre-projected
+            // Arrow schema, so a `None` here means this leaf is neither projected nor filtered
+            // on -- it is not a judgement about the file. Skipping is right either way, and it
+            // keeps the type check scoped to leaves this scan actually reads.
+            let (Some(iceberg_field), Some(parquet_iceberg_field)) = (
+                iceberg_schema_of_task.field_by_id(field_id),
+                iceberg_schema.field_by_id(field_id),
+            ) else {
                 return false;
-            }
+            };
 
             if !type_promotion_is_valid(
-                parquet_iceberg_field
-                    .unwrap()
-                    .field_type
-                    .as_primitive_type(),
-                iceberg_field.unwrap().field_type.as_primitive_type(),
+                parquet_iceberg_field.field_type.as_primitive_type(),
+                iceberg_field.field_type.as_primitive_type(),
             ) {
+                let mismatch = format!(
+                    "field {} ({}): file type {}, projected type {}",
+                    field_id,
+                    iceberg_field.name,
+                    parquet_iceberg_field.field_type,
+                    iceberg_field.field_type
+                );
+                // A field id can be requested more than once, and two distinct leaves can
+                // carry the same embedded id, so guard against naming one column twice as
+                // though it were two separate problems.
+                if !type_mismatches.contains(&mismatch) {
+                    type_mismatches.push(mismatch);
+                }
                 return false;
             }
 
             column_map.insert(field_id, idx);
-            true
+
+            // `false`, not `true`: the rebuilt `Fields` tree this would produce is discarded.
+            // Returning `false` throughout skips cloning every struct/list/map wrapper and does
+            // not perturb this pass -- arrow increments its leaf counter unconditionally and
+            // recurses into all children regardless of the predicate -- so leaf indices and
+            // visit order are unaffected. Same idiom as `build_field_id_map_from_arrow_schema`.
+            false
         });
 
-        // Schema evolution: New columns may not exist in old Parquet files.
-        // We only project existing columns; RecordBatchTransformer adds default/NULL values.
+        // We must first check for any unpromotable column types.
+        // Once we've rejected them, we can trust that a field ID absent in `column_map` now means the data file
+        // was written without the column and default values should be used later.
+        if !type_mismatches.is_empty() {
+            return Err(unpromotable_column_types_error(&type_mismatches));
+        }
+
+        // `leaf_field_ids`, not `checked_field_id_set`: `column_map` also holds the filter-only
+        // leaves that were type-checked above, and those must not be projected into the output
+        // batch. They are read by the row filter's own mask (`get_row_filter`) instead.
         let mut indices = vec![];
         for field_id in leaf_field_ids {
             if let Some(col_idx) = column_map.get(field_id) {
@@ -240,6 +306,11 @@ impl ArrowReader {
     /// Fallback projection for Parquet files without field IDs.
     /// Uses position-based matching: field ID N → column position N-1.
     /// Projects entire top-level columns (including nested content) for iceberg-java compatibility.
+    ///
+    /// The positional guess is a heuristic (matching iceberg-java's
+    /// `ParquetSchemaUtil.addFallbackIds()`), so a file whose physical column order does not line
+    /// up with the schema's field ids is misread here. Nothing detects that: a type check would
+    /// catch it only when the two columns happen to differ in type.
     fn get_arrow_projection_mask_fallback(
         field_ids: &[i32],
         parquet_schema: &SchemaDescriptor,
@@ -248,6 +319,16 @@ impl ArrowReader {
         let parquet_root_fields = parquet_schema.root_schema().get_fields();
         let mut root_indices = vec![];
 
+        // FOLLOW-UP: this path does not type-check at all, so the silent-NULL problem fixed
+        // above still exists here in a narrower form -- see
+        // `test_fallback_projection_silently_nulls_unrepresentable_values`. Applying
+        // `type_promotion_is_valid` here is NOT the fix: that allowlist answers "is this a
+        // legal Iceberg promotion", but files reaching this path were never written by an
+        // Iceberg writer, so their physical types diverge by construction (Hive `string` as
+        // unannotated `binary`, naive `timestamp` under a `timestamptz` schema). Pre-screening
+        // on it rejects those files even though the cast reads them correctly. A strict
+        // (`safe: false`) cast in `RecordBatchTransformer` is the promising direction: it
+        // permits every lossless cast and fails only on the values that would become NULL.
         for field_id in field_ids.iter() {
             let parquet_pos = (*field_id - 1) as usize;
 
@@ -263,6 +344,54 @@ impl ArrowReader {
             Ok(ProjectionMask::roots(parquet_schema, root_indices))
         }
     }
+}
+
+/// Whether a Parquet file column of `file_type` can be read as `projected_type`.
+///
+/// Deliberately narrower than the spec's promotion table, and narrower still than what
+/// `arrow_cast::cast` can do. Only meaningful for files carrying embedded field ids, whose
+/// writer was Iceberg-aware and so should only ever have produced a legal promotion.
+fn type_promotion_is_valid(
+    file_type: Option<&PrimitiveType>,
+    projected_type: Option<&PrimitiveType>,
+) -> bool {
+    match (file_type, projected_type) {
+        (Some(lhs), Some(rhs)) if lhs == rhs => true,
+        (Some(PrimitiveType::Int), Some(PrimitiveType::Long)) => true,
+        (Some(PrimitiveType::Float), Some(PrimitiveType::Double)) => true,
+        (
+            Some(PrimitiveType::Decimal {
+                precision: file_precision,
+                scale: file_scale,
+            }),
+            Some(PrimitiveType::Decimal {
+                precision: requested_precision,
+                scale: requested_scale,
+            }),
+        ) if requested_precision >= file_precision && file_scale == requested_scale => true,
+        // Uuid will be store as Fixed(16) in parquet file, so the read back type will be Fixed(16).
+        (Some(PrimitiveType::Fixed(16)), Some(PrimitiveType::Uuid)) => true,
+        _ => false,
+    }
+}
+
+/// The error for columns present in the file but unreadable at the projected type.
+///
+/// `FeatureUnsupported`, not `DataInvalid`: this fires whenever a pair is missing from
+/// `type_promotion_is_valid`'s allowlist, and that allowlist is narrower than the spec. Some
+/// pairs really are invalid data (the spec forbids narrowing, so a `long` column under an `int`
+/// schema cannot come from a valid schema history), but others are perfectly valid files this
+/// reader cannot yet interpret -- a Parquet `Geometry` column, which arrow-rs surfaces as
+/// `Binary`, or the v3 `date` -> `timestamp` promotion the allowlist omits. One kind covers
+/// both, so prefer the one that does not tell users their valid files are corrupt.
+fn unpromotable_column_types_error(type_mismatches: &[String]) -> Error {
+    Error::new(
+        ErrorKind::FeatureUnsupported,
+        format!(
+            "Parquet file column types cannot be promoted to the projected schema types: {}",
+            type_mismatches.join("; ")
+        ),
+    )
 }
 
 /// Whether `field_type` is, or transitively contains, a variant type.
@@ -578,6 +707,7 @@ message schema {
         // Try projecting the fields c2 and c3 with the unsupported data types
         let err = ArrowReader::get_arrow_projection_mask(
             &[1, 2, 3],
+            &[],
             &schema,
             &parquet_schema,
             &arrow_schema,
@@ -594,6 +724,7 @@ message schema {
         // Omitting field c2, we still get an error due to c3 being selected
         let err = ArrowReader::get_arrow_projection_mask(
             &[1, 3],
+            &[],
             &schema,
             &parquet_schema,
             &arrow_schema,
@@ -610,12 +741,137 @@ message schema {
         // Finally avoid selecting fields with unsupported data types
         let mask = ArrowReader::get_arrow_projection_mask(
             &[1],
+            &[],
             &schema,
             &parquet_schema,
             &arrow_schema,
             false,
         )
         .expect("Some ProjectionMask");
+        assert_eq!(mask, ProjectionMask::leaves(&parquet_schema, vec![0]));
+    }
+
+    /// A column that is present in the file but whose type cannot be promoted to the
+    /// projected type must error, not be skipped. Skipping it would make it
+    /// indistinguishable from a column that is absent from the file, and the reader would
+    /// NULL-fill it -- returning NULLs for values that are on disk, with no error or
+    /// warning. Spec column-projection rule #4 (null for a missing column) is scoped to
+    /// fields *not present* in a data file; a present-but-unreadable column is not in scope.
+    ///
+    /// Distinct from `test_arrow_projection_mask`, which pins the *unsupported Arrow type*
+    /// error raised earlier by `arrow_schema_to_schema`. The gap here is narrower: an Arrow
+    /// type that converts to an Iceberg type perfectly well, but whose promotion to the
+    /// projected type `type_promotion_is_valid` does not permit.
+    #[test]
+    fn test_arrow_projection_mask_rejects_invalid_type_promotion() {
+        let schema = Arc::new(
+            Schema::builder()
+                .with_schema_id(1)
+                .with_fields(vec![
+                    NestedField::required(1, "c1", Type::Primitive(PrimitiveType::String)).into(),
+                    // Narrowing Long -> Int is not a valid promotion.
+                    NestedField::optional(2, "c2", Type::Primitive(PrimitiveType::Int)).into(),
+                    // Binary -> Uuid is not a valid promotion (only Fixed(16) -> Uuid is).
+                    NestedField::optional(3, "c3", Type::Primitive(PrimitiveType::Uuid)).into(),
+                ])
+                .build()
+                .unwrap(),
+        );
+
+        let field_with_id = |name: &str, data_type: DataType, id: &str| {
+            Field::new(name, data_type, true).with_metadata(HashMap::from([(
+                PARQUET_FIELD_ID_META_KEY.to_string(),
+                id.to_string(),
+            )]))
+        };
+
+        let arrow_schema = Arc::new(ArrowSchema::new(vec![
+            field_with_id("c1", DataType::Utf8, "1"),
+            field_with_id("c2", DataType::Int64, "2"),
+            field_with_id("c3", DataType::Binary, "3"),
+        ]));
+
+        let message_type = "
+message schema {
+  required binary c1 (STRING) = 1;
+  optional int64 c2 = 2;
+  optional binary c3 = 3;
+}
+    ";
+        let parquet_type = parse_message_type(message_type).expect("should parse schema");
+        let parquet_schema = SchemaDescriptor::new(Arc::new(parquet_type));
+
+        // Every mismatching column is named, not just the first one found.
+        let err = ArrowReader::get_arrow_projection_mask(
+            &[1, 2, 3],
+            &[],
+            &schema,
+            &parquet_schema,
+            &arrow_schema,
+            false,
+        )
+        .expect_err("unpromotable column types must be rejected");
+
+        assert_eq!(err.kind(), ErrorKind::FeatureUnsupported);
+        let message = err.to_string();
+        assert!(
+            message.contains("field 2 (c2): file type long, projected type int"),
+            "{message}"
+        );
+        assert!(
+            message.contains("field 3 (c3): file type binary, projected type uuid"),
+            "{message}"
+        );
+
+        // The promotable column on its own still projects.
+        let mask = ArrowReader::get_arrow_projection_mask(
+            &[1],
+            &[],
+            &schema,
+            &parquet_schema,
+            &arrow_schema,
+            false,
+        )
+        .expect("Some ProjectionMask");
+        assert_eq!(mask, ProjectionMask::leaves(&parquet_schema, vec![0]));
+    }
+
+    /// The error above must not swallow the genuine not-present case: a field id that the
+    /// file does not carry at all is still NULL-filled per column-projection rule #4.
+    #[test]
+    fn test_arrow_projection_mask_allows_missing_column() {
+        let schema = Arc::new(
+            Schema::builder()
+                .with_schema_id(1)
+                .with_fields(vec![
+                    NestedField::required(1, "c1", Type::Primitive(PrimitiveType::String)).into(),
+                    // Added after the file was written.
+                    NestedField::optional(2, "c2", Type::Primitive(PrimitiveType::Int)).into(),
+                ])
+                .build()
+                .unwrap(),
+        );
+
+        let arrow_schema = Arc::new(ArrowSchema::new(vec![
+            Field::new("c1", DataType::Utf8, false).with_metadata(HashMap::from([(
+                PARQUET_FIELD_ID_META_KEY.to_string(),
+                "1".to_string(),
+            )])),
+        ]));
+
+        let parquet_schema = SchemaDescriptor::new(Arc::new(
+            parse_message_type("message schema { required binary c1 (STRING) = 1; }").unwrap(),
+        ));
+
+        let mask = ArrowReader::get_arrow_projection_mask(
+            &[1, 2],
+            &[],
+            &schema,
+            &parquet_schema,
+            &arrow_schema,
+            false,
+        )
+        .expect("a column absent from the file must not be an error");
         assert_eq!(mask, ProjectionMask::leaves(&parquet_schema, vec![0]));
     }
 
@@ -664,6 +920,7 @@ message schema {
         for projected in [vec![2], vec![3], vec![4], vec![5], vec![1, 2]] {
             let err = ArrowReader::get_arrow_projection_mask(
                 &projected,
+                &[],
                 &schema,
                 &parquet_schema,
                 &arrow_schema,
@@ -865,6 +1122,299 @@ message schema {
         assert_eq!(age_array.value(0), 30);
         assert_eq!(age_array.value(1), 25);
         assert_eq!(age_array.value(2), 35);
+    }
+
+    /// Scan a field-id-less Parquet file (forcing the position-based fallback) built from
+    /// `file_fields`/`file_columns`, projecting every field in `schema`.
+    async fn read_migrated_file(
+        file_fields: Vec<Field>,
+        file_columns: Vec<ArrayRef>,
+        schema: Arc<Schema>,
+    ) -> Result<Vec<RecordBatch>, crate::Error> {
+        // No field ID metadata on any field, and no name mapping on the task: branch 3.
+        let arrow_schema = Arc::new(ArrowSchema::new(file_fields));
+
+        let tmp_dir = TempDir::new().unwrap();
+        let table_location = tmp_dir.path().to_str().unwrap().to_string();
+        let file_io = FileIO::new_with_fs();
+
+        let to_write = RecordBatch::try_new(arrow_schema, file_columns).unwrap();
+
+        let props = WriterProperties::builder()
+            .set_compression(Compression::SNAPPY)
+            .build();
+        let file = File::create(format!("{table_location}/1.parquet")).unwrap();
+        let mut writer = ArrowWriter::try_new(file, to_write.schema(), Some(props)).unwrap();
+        writer.write(&to_write).expect("Writing batch");
+        writer.close().unwrap();
+
+        let project_field_ids: Vec<i32> =
+            schema.as_struct().fields().iter().map(|f| f.id).collect();
+
+        let reader = ArrowReaderBuilder::new(file_io, Runtime::current()).build();
+        let tasks = Box::pin(futures::stream::iter(vec![Ok(FileScanTask::builder()
+            .with_file_size_in_bytes(
+                std::fs::metadata(format!("{table_location}/1.parquet"))
+                    .unwrap()
+                    .len(),
+            )
+            .with_start(0)
+            .with_length(0)
+            .with_data_file_path(format!("{table_location}/1.parquet"))
+            .with_data_file_format(DataFileFormat::Parquet)
+            .with_schema(schema)
+            .with_project_field_ids(project_field_ids)
+            .with_case_sensitive(false)
+            .build()
+            .unwrap())])) as FileScanTaskStream;
+
+        reader.read(tasks).unwrap().stream().try_collect().await
+    }
+
+    /// Pins the known silent-NULL gap on the position-based fallback path, so that the
+    /// behaviour is recorded rather than assumed absent. See the FOLLOW-UP comment in
+    /// `get_arrow_projection_mask_fallback`.
+    ///
+    /// This path type-checks nothing, so the unreadable column *is* projected. It reaches
+    /// `ColumnSource::Promote` in `RecordBatchTransformer` and is cast with `safe: true`, which
+    /// turns unrepresentable values into NULL row by row while representable ones pass through
+    /// untouched. A file `long` read as `int` therefore yields real values for small numbers and
+    /// NULL for large ones -- harder to notice than a wholly-NULL column, not easier.
+    ///
+    /// Note that the field-id path errors on exactly this pair
+    /// (`test_arrow_projection_mask_rejects_invalid_type_promotion`). The asymmetry is the gap.
+    #[tokio::test]
+    async fn test_fallback_projection_silently_nulls_unrepresentable_values() {
+        use arrow_array::Int64Array;
+
+        let schema = Arc::new(
+            Schema::builder()
+                .with_schema_id(1)
+                .with_fields(vec![
+                    NestedField::required(1, "name", Type::Primitive(PrimitiveType::String)).into(),
+                    NestedField::optional(2, "v", Type::Primitive(PrimitiveType::Int)).into(),
+                ])
+                .build()
+                .unwrap(),
+        );
+
+        let batches = read_migrated_file(
+            vec![
+                Field::new("name", DataType::Utf8, false),
+                Field::new("v", DataType::Int64, true),
+            ],
+            vec![
+                Arc::new(StringArray::from(vec!["a", "b", "c"])) as ArrayRef,
+                Arc::new(Int64Array::from(vec![30i64, 5_000_000_000, -3])) as ArrayRef,
+            ],
+            schema,
+        )
+        .await
+        .expect("today the fallback path reads this file without complaint");
+
+        let v = batches[0]
+            .column(1)
+            .as_primitive::<arrow_array::types::Int32Type>();
+        assert_eq!(v.value(0), 30);
+        // 5_000_000_000 does not fit in an `int`, and is dropped rather than reported.
+        assert!(v.is_null(1), "expected the out-of-range value to be NULLed");
+        assert_eq!(v.value(2), -3);
+    }
+
+    /// Files reaching the position-based fallback were not written by an Iceberg writer, so
+    /// their physical types diverge from what an Iceberg writer would emit *by construction*:
+    /// Hive/Impala write `string` as unannotated Parquet `binary`, and write a `timestamptz`
+    /// column as a naive `Timestamp(µs, None)`. Both read correctly -- the cast is lossless --
+    /// and both must keep reading correctly.
+    ///
+    /// This is a regression test for a rejected fix: pre-screening this path with
+    /// `type_promotion_is_valid` (the field-id path's allowlist) turns both of these files into
+    /// hard scan failures, because the allowlist answers "is this a legal Iceberg promotion",
+    /// not "can arrow read this physical type losslessly". Any future fix for the gap pinned by
+    /// `test_fallback_projection_silently_nulls_unrepresentable_values` must leave these two
+    /// files readable.
+    #[tokio::test]
+    async fn test_fallback_projection_reads_diverging_physical_types() {
+        use arrow_array::{BinaryArray, TimestampMicrosecondArray};
+
+        let schema = Arc::new(
+            Schema::builder()
+                .with_schema_id(1)
+                .with_fields(vec![
+                    NestedField::optional(1, "s", Type::Primitive(PrimitiveType::String)).into(),
+                    NestedField::optional(2, "ts", Type::Primitive(PrimitiveType::Timestamptz))
+                        .into(),
+                ])
+                .build()
+                .unwrap(),
+        );
+
+        let batches = read_migrated_file(
+            vec![
+                Field::new("s", DataType::Binary, true),
+                Field::new("ts", DataType::Timestamp(TimeUnit::Microsecond, None), true),
+            ],
+            vec![
+                Arc::new(BinaryArray::from(vec![&b"hello"[..], &b"world"[..]])) as ArrayRef,
+                Arc::new(TimestampMicrosecondArray::from(vec![
+                    1_700_000_000_000_000i64,
+                    1_700_000_001_000_000,
+                ])) as ArrayRef,
+            ],
+            schema,
+        )
+        .await
+        .expect("physical types that diverge losslessly must still read");
+
+        let s = batches[0].column(0).as_string::<i32>();
+        assert_eq!(s.null_count(), 0);
+        assert_eq!(s.value(0), "hello");
+        assert_eq!(s.value(1), "world");
+
+        let ts = batches[0]
+            .column(1)
+            .as_primitive::<arrow_array::types::TimestampMicrosecondType>();
+        assert_eq!(ts.null_count(), 0);
+        assert_eq!(ts.value(0), 1_700_000_000_000_000);
+        assert_eq!(
+            batches[0].schema().field(1).data_type(),
+            &DataType::Timestamp(TimeUnit::Microsecond, Some("+00:00".into()))
+        );
+    }
+
+    /// A spec-legal promotion (`int` -> `long`) must read on the fallback path too.
+    #[tokio::test]
+    async fn test_fallback_projection_allows_valid_promotion() {
+        use arrow_array::Int32Array;
+
+        let schema = Arc::new(
+            Schema::builder()
+                .with_schema_id(1)
+                .with_fields(vec![
+                    NestedField::required(1, "name", Type::Primitive(PrimitiveType::String)).into(),
+                    NestedField::optional(2, "age", Type::Primitive(PrimitiveType::Long)).into(),
+                ])
+                .build()
+                .unwrap(),
+        );
+
+        let batches = read_migrated_file(
+            vec![
+                Field::new("name", DataType::Utf8, false),
+                Field::new("age", DataType::Int32, true),
+            ],
+            vec![
+                Arc::new(StringArray::from(vec!["a", "b"])) as ArrayRef,
+                Arc::new(Int32Array::from(vec![30, 25])) as ArrayRef,
+            ],
+            schema,
+        )
+        .await
+        .expect("int -> long is a valid promotion and must still read");
+
+        let age = batches[0]
+            .column(1)
+            .as_primitive::<arrow_array::types::Int64Type>();
+        assert_eq!(age.null_count(), 0);
+        assert_eq!(age.value(0), 30);
+        assert_eq!(age.value(1), 25);
+    }
+
+    /// A column the filter reads must be type-checked even when it is not projected.
+    ///
+    /// `collect_scan_field_ids` derives `project_field_ids` from the selected column names
+    /// alone, so before this was fixed `select(["name"]).filter(v < 100)` type-checked `name`
+    /// and nothing else, while the row filter went on to read `v` from the file anyway. The
+    /// same file that fails outright when `v` IS selected then returned rows filtered on values
+    /// the projected schema says cannot exist -- the file's `v` is `long`, holding
+    /// 5_000_000_000, which is not representable as the schema's `int`.
+    ///
+    /// Both directions are asserted here so the pair cannot drift apart again.
+    #[tokio::test]
+    async fn test_predicate_only_column_is_type_checked() {
+        use arrow_array::Int64Array;
+
+        let schema = Arc::new(
+            Schema::builder()
+                .with_schema_id(1)
+                .with_fields(vec![
+                    NestedField::optional(1, "name", Type::Primitive(PrimitiveType::String)).into(),
+                    NestedField::optional(2, "v", Type::Primitive(PrimitiveType::Int)).into(),
+                ])
+                .build()
+                .unwrap(),
+        );
+
+        let file_fields = vec![
+            Field::new("name", DataType::Utf8, true).with_metadata(HashMap::from([(
+                PARQUET_FIELD_ID_META_KEY.to_string(),
+                "1".to_string(),
+            )])),
+            Field::new("v", DataType::Int64, true).with_metadata(HashMap::from([(
+                PARQUET_FIELD_ID_META_KEY.to_string(),
+                "2".to_string(),
+            )])),
+        ];
+        let file_columns = vec![
+            Arc::new(StringArray::from(vec!["a", "b", "c"])) as ArrayRef,
+            Arc::new(Int64Array::from(vec![30i64, 5_000_000_000, -3])) as ArrayRef,
+        ];
+
+        let arrow_schema = Arc::new(ArrowSchema::new(file_fields));
+        let tmp_dir = TempDir::new().unwrap();
+        let table_location = tmp_dir.path().to_str().unwrap().to_string();
+        let to_write = RecordBatch::try_new(arrow_schema, file_columns).unwrap();
+        let props = WriterProperties::builder()
+            .set_compression(Compression::SNAPPY)
+            .build();
+        let file = File::create(format!("{table_location}/1.parquet")).unwrap();
+        let mut writer = ArrowWriter::try_new(file, to_write.schema(), Some(props)).unwrap();
+        writer.write(&to_write).expect("Writing batch");
+        writer.close().unwrap();
+
+        let predicate = Reference::new("v")
+            .less_than(Datum::int(100))
+            .bind(schema.clone(), true)
+            .unwrap();
+
+        // `v` is filtered on but deliberately absent from the projection.
+        for project_field_ids in [vec![1], vec![1, 2]] {
+            let reader = ArrowReaderBuilder::new(FileIO::new_with_fs(), Runtime::current()).build();
+            let tasks = Box::pin(futures::stream::iter(vec![Ok(FileScanTask::builder()
+                .with_file_size_in_bytes(
+                    std::fs::metadata(format!("{table_location}/1.parquet"))
+                        .unwrap()
+                        .len(),
+                )
+                .with_start(0)
+                .with_length(0)
+                .with_data_file_path(format!("{table_location}/1.parquet"))
+                .with_data_file_format(DataFileFormat::Parquet)
+                .with_schema(schema.clone())
+                .with_project_field_ids(project_field_ids.clone())
+                .with_case_sensitive(false)
+                .with_predicate(Some(predicate.clone()))
+                .build()
+                .unwrap())])) as FileScanTaskStream;
+
+            let err = reader
+                .read(tasks)
+                .unwrap()
+                .stream()
+                .try_collect::<Vec<RecordBatch>>()
+                .await
+                .expect_err(&format!(
+                    "a filter column at an unreadable type must fail the scan whether or not it \
+                     is projected (projection was {project_field_ids:?})"
+                ));
+
+            assert_eq!(err.kind(), ErrorKind::FeatureUnsupported, "{err}");
+            assert!(
+                err.to_string()
+                    .contains("field 2 (v): file type long, projected type int"),
+                "{err}"
+            );
+        }
     }
 
     /// Regression test for #2403: when a Parquet file lacks embedded field IDs but a
@@ -1851,6 +2401,136 @@ message schema {
         assert_eq!(name_col.value(1), "Bob");
         assert_eq!(name_col.value(2), "Charlie");
         assert_eq!(name_col.value(3), "Dave");
+    }
+
+    /// An identity-partitioned column that IS in the data file at an unreadable type must
+    /// fail the scan -- it must NOT fall back to the partition-metadata constant.
+    ///
+    /// This pins a deliberate behaviour change, so it is worth being explicit about why the
+    /// old behaviour was wrong rather than merely different.
+    ///
+    /// Column-projection rule #1 ("Return the value from partition metadata if an Identity
+    /// Transform exists for the field") reads, in the spec, under a preamble that scopes all
+    /// four rules: *"Values for field ids which are **not present in a data file** must be
+    /// resolved according the following rules"*. Rule #1 is therefore a rule about absent
+    /// columns -- it exists for metadata-only Hive migrations, where the partition column
+    /// lives in the directory path and not in the file. It says nothing about a column the
+    /// file does contain. `RecordBatchTransformer::generate_transform_operations` already
+    /// encodes exactly this: an identity-partition field present in the file falls through
+    /// to be read from the file instead of using the constant.
+    ///
+    /// Before this change the constant was served here anyway, but not because rule #1
+    /// applied -- because two conflations stacked. Projection skipped the unpromotable leaf,
+    /// which made the transformer's `present_in_file` check (which consults the *projected*
+    /// batch, not the file) see an absent column, which handed it to rule #1. The right
+    /// answer arrived, if at all, by accident.
+    ///
+    /// It is also not reliably the right answer. For an identity partition the constant
+    /// equals the column's value for every row *if the file agrees with its partition
+    /// metadata* -- and we cannot check that, because the column is precisely the one we
+    /// cannot decode. A file whose `dt` disagrees with the manifest (a mis-written
+    /// `add_files` migration, say) would have its disagreement papered over by the very
+    /// constant we substituted. That is the same defect this commit removes: answering
+    /// confidently from a guess about a type we do not understand. Failing is correct.
+    #[tokio::test]
+    async fn test_identity_partition_column_unreadable_in_file_errors() {
+        use arrow_array::{Int32Array, Int64Array};
+
+        use crate::spec::{Literal, PartitionSpec, Struct, Transform};
+
+        // Schema declares `dt` as Int; the file stores it as Int64. Narrowing Long -> Int is
+        // not a valid promotion, so `dt` is present in the file but unreadable as projected.
+        let schema = Arc::new(
+            Schema::builder()
+                .with_schema_id(0)
+                .with_fields(vec![
+                    NestedField::required(1, "id", Type::Primitive(PrimitiveType::Int)).into(),
+                    NestedField::required(2, "dt", Type::Primitive(PrimitiveType::Int)).into(),
+                ])
+                .build()
+                .unwrap(),
+        );
+
+        // identity(dt): rule #1 would supply a constant for `dt` if it were absent.
+        let partition_spec = Arc::new(
+            PartitionSpec::builder(schema.clone())
+                .with_spec_id(0)
+                .add_partition_field("dt", "dt", Transform::Identity)
+                .unwrap()
+                .build()
+                .unwrap(),
+        );
+        let partition_data = Struct::from_iter(vec![Some(Literal::int(20240101))]);
+
+        let arrow_schema = Arc::new(ArrowSchema::new(vec![
+            Field::new("id", DataType::Int32, false).with_metadata(HashMap::from([(
+                PARQUET_FIELD_ID_META_KEY.to_string(),
+                "1".to_string(),
+            )])),
+            Field::new("dt", DataType::Int64, false).with_metadata(HashMap::from([(
+                PARQUET_FIELD_ID_META_KEY.to_string(),
+                "2".to_string(),
+            )])),
+        ]));
+
+        let tmp_dir = TempDir::new().unwrap();
+        let table_location = tmp_dir.path().to_str().unwrap().to_string();
+        let file_io = FileIO::new_with_fs();
+
+        let id_data = Arc::new(Int32Array::from(vec![1, 2])) as ArrayRef;
+        // Deliberately disagrees with the partition metadata above, which is only
+        // observable if the file column is actually read.
+        let dt_data = Arc::new(Int64Array::from(vec![20240102, 20240103])) as ArrayRef;
+
+        let to_write = RecordBatch::try_new(arrow_schema.clone(), vec![id_data, dt_data]).unwrap();
+
+        let props = WriterProperties::builder()
+            .set_compression(Compression::SNAPPY)
+            .build();
+        let file = File::create(format!("{table_location}/data.parquet")).unwrap();
+        let mut writer = ArrowWriter::try_new(file, to_write.schema(), Some(props)).unwrap();
+        writer.write(&to_write).expect("Writing batch");
+        writer.close().unwrap();
+
+        let reader = ArrowReaderBuilder::new(file_io, Runtime::current()).build();
+        let tasks = Box::pin(futures::stream::iter(
+            vec![Ok(FileScanTask::builder()
+                .with_file_size_in_bytes(
+                    std::fs::metadata(format!("{table_location}/data.parquet"))
+                        .unwrap()
+                        .len(),
+                )
+                .with_start(0)
+                .with_length(0)
+                .with_data_file_path(format!("{table_location}/data.parquet"))
+                .with_data_file_format(DataFileFormat::Parquet)
+                .with_schema(schema.clone())
+                .with_project_field_ids(vec![1, 2])
+                .with_case_sensitive(false)
+                .with_partition(Some(partition_data))
+                .with_partition_spec(Some(partition_spec))
+                .build()
+                .unwrap())]
+            .into_iter(),
+        )) as FileScanTaskStream;
+
+        let err = reader
+            .read(tasks)
+            .unwrap()
+            .stream()
+            .try_collect::<Vec<RecordBatch>>()
+            .await
+            .expect_err(
+                "an identity-partitioned column present in the file at an unreadable type must \
+                 fail the scan, not silently resolve to the partition-metadata constant",
+            );
+
+        assert_eq!(err.kind(), ErrorKind::FeatureUnsupported, "{err}");
+        assert!(
+            err.to_string()
+                .contains("field 2 (dt): file type long, projected type int"),
+            "{err}"
+        );
     }
 
     /// Regression for <https://github.com/apache/iceberg-rust/issues/2306>:

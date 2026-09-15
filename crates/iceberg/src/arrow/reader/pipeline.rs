@@ -360,6 +360,17 @@ impl FileScanTaskReader {
             .copied()
             .collect();
 
+        // Columns the filter reads. Not a subset of the projected ids -- a `filter` on a column
+        // that is not `select`ed still reads it from the file -- so they are passed separately
+        // to be type-checked without being projected.
+        let predicate_field_ids: Vec<i32> = match task.predicate() {
+            Some(predicate) => ArrowReader::collect_predicate_field_ids(predicate)?
+                .into_iter()
+                .filter(|&id| !is_metadata_field(id))
+                .collect(),
+            None => vec![],
+        };
+
         // Create projection mask based on field IDs
         // - If file has embedded IDs: field-ID-based projection
         // - If name mapping applied: field-ID-based projection using the IDs the name
@@ -367,6 +378,7 @@ impl FileScanTaskReader {
         // - Otherwise: position-based fallback projection
         let mut projection_mask = ArrowReader::get_arrow_projection_mask(
             &project_field_ids_without_metadata,
+            &predicate_field_ids,
             task.schema(),
             record_batch_stream_builder.parquet_schema(),
             record_batch_stream_builder.schema(),

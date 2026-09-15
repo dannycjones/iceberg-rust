@@ -97,6 +97,13 @@ impl BasicDeleteFileLoader {
     ///
     /// Per the [Iceberg spec](https://iceberg.apache.org/spec/#equality-delete-files),
     /// only evolves the specified `equality_ids` columns, not all table columns.
+    ///
+    /// FOLLOW-UP: unlike the data-file path, nothing type-checks the delete file's columns
+    /// against `target_schema` before `RecordBatchTransformer` casts them with `safe: true`. A
+    /// delete key that does not survive the cast becomes NULL, so it silently matches no row
+    /// and the rows it should have deleted are returned by the scan. Same root cause as the
+    /// gap noted in `ArrowReader::get_arrow_projection_mask_fallback`, but with a worse
+    /// symptom: wrong rows rather than missing values.
     pub(crate) async fn evolve_schema(
         record_batch_stream: ArrowRecordBatchStream,
         target_schema: Arc<Schema>,

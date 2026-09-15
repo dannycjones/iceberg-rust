@@ -820,9 +820,12 @@ impl RecordBatchTransformer {
                 // 3. Use initial_default
                 // 4. Return null
                 //
-                // Why check partition constants before Parquet field IDs (Java: BaseParquetReaders.java:299):
-                // In add_files scenarios, partition columns may exist in BOTH Parquet AND partition metadata.
-                // Partition metadata is authoritative - it defines which partition this file belongs to.
+                // Constants are consulted before the Parquet field ids only so that virtual and
+                // metadata columns (`_file`, `_spec_id`, ...) short-circuit; it is not a
+                // precedence rule for identity partition columns. All four rules above are
+                // scoped by the spec to "field ids which are not present in a data file", so a
+                // partition column the file actually carries is read from the file and the
+                // manifest constant is ignored -- see the `ColumnConstant::Scalar` arm above.
 
                 // Field ID resolution now happens in ArrowReader via:
                 // 1. Embedded field IDs (ParquetSchemaUtil.hasIds() = true) - trust them
@@ -855,6 +858,18 @@ impl RecordBatchTransformer {
                     // Rule #2 (name mapping) was already applied in reader.rs if needed.
                     // If field_id is still not found, the column doesn't exist in the Parquet file.
                     // Fall through to rule #3 (initial_default) or rule #4 (null).
+                    //
+                    // On the field-id path, a column that *is* in the file but whose type cannot
+                    // be promoted to the projected type cannot arrive here as a miss and be
+                    // NULL-filled: `get_arrow_projection_mask_with_field_ids` errors on it
+                    // instead of skipping it, precisely so that "absent from the file" and
+                    // "unreadable at the projected type" stay distinguishable here.
+                    //
+                    // That guarantee does not extend to the position-based fallback path
+                    // (`get_arrow_projection_mask_fallback`), which type-checks nothing. There
+                    // the column is projected, reaches `ColumnSource::Promote` below, and is
+                    // cast with `safe: true` -- so unrepresentable values become NULL row by
+                    // row rather than erroring. See the FOLLOW-UP comment on that function.
                     //
                     // Per the spec's "Default values", null is only a valid default for an
                     // optional field. A required field that is absent with no initial-default
