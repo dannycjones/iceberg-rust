@@ -1,0 +1,121 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# cargo-about configuration for THIRD-PARTY-LICENSES, the license-text bundle
+# shipped inside the pyiceberg-core wheels. Regenerate with
+# `dev/release/dependencies.sh generate-third-party-licenses`.
+#
+# The wheel is a compiled artifact: every crate below is statically linked into
+# pyiceberg_core_rust.abi3.so (.pyd on Windows). Shipping it redistributes those
+# crates, which triggers the attribution conditions of their licenses. Those
+# conditions require the license text and copyright notices in the artifact, which
+# is why recording SPDX identifiers elsewhere in the repository does not discharge
+# them and this file exists.
+
+# No `targets` key on purpose: the target triples are passed on the command line
+# instead, as repeated `--target` flags, because the set differs per wheel and one
+# report is generated per wheel. The authoritative list is WHEEL_LICENSE_REPORTS
+# in dev/release/dependencies.sh; keeping it out of here avoids two lists that
+# would have to agree.
+
+# Dev-dependencies never reach the wheel. Build-dependencies can contribute
+# generated code to the final binary, so they are deliberately not ignored.
+ignore-build-dependencies = false
+ignore-dev-dependencies = true
+
+# ORDER IS SIGNIFICANT. Do not sort this list.
+#
+# Unlike deny.toml's `allow`, which is a policy gate answering "may we use this
+# crate", this is an ordered preference list that decides *which* license we take
+# for a crate offering a choice -- and therefore which text ships in the wheels.
+# Most Rust crates are "MIT OR Apache-2.0", so the first two entries decide the
+# bulk of the bundle. Measured on the x86_64-unknown-linux-gnu graph:
+#
+#   Apache-2.0 first (as below):  196 crates Apache-2.0,  47 MIT,  30 distinct notices
+#   MIT first:                     28 crates Apache-2.0, 215 MIT, 103 distinct notices
+#
+# Apache-2.0 first is both the ASF-idiomatic choice and the smaller bundle, because
+# Apache-2.0 crates share one license text and few distinct notices where MIT
+# requires reproducing every copyright line. Alphabetising this list would silently
+# change what the published wheels contain.
+#
+# This must stay a superset of the root deny.toml `allow` list: cargo-deny decides
+# what we may depend on, and a license it permits but this list omits would make
+# generation fail. dev/release/dependencies.sh checks that invariant so the two
+# files cannot drift apart unnoticed. Two deliberate differences:
+#
+#  * MPL-2.0 is accepted here unconditionally, where deny.toml scopes it to the
+#    `colored` and `option-ext` crates via per-crate `exceptions`. cargo-about has
+#    no equivalent mechanism, so a global entry is the only expressible form. It is
+#    looser than our actual policy; deny.toml remains the gate that enforces it.
+#  * MIT-0, 0BSD and Unlicense match nothing in main's current graph -- removing
+#    them leaves the output byte-identical. They are kept because they do appear in
+#    graphs that include the DataFusion dependency tree, where 0BSD is also required
+#    by the liblzma-sys clarification, and because a crate gaining one of these as
+#    its preferred option should not break a release build.
+#
+# cargo-about runs with `--fail`, so a crate whose license is not listed here breaks
+# the build rather than being dropped silently from the bundle.
+accepted = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "MIT",
+  "MIT-0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "CC0-1.0",
+  "Zlib",
+  "CDLA-Permissive-2.0",
+  "bzip2-1.0.6",
+  "0BSD",
+  "Unlicense",
+  # Category-A: https://issues.apache.org/jira/browse/LEGAL-660
+  "Unicode-3.0",
+  # Boost Software License Version 1.0 is allowed (Category-A):
+  # https://www.apache.org/legal/resolved.html#category-a
+  "BSL-1.0",
+  # The MPL license is allowed (binary-only):
+  # https://www.apache.org/legal/resolved.html#category-b
+  "MPL-2.0",
+]
+
+# Workspace crates are ASF-owned and already covered by the wheel's LICENSE and
+# NOTICE, so they are not repeated in the bundle.
+[private]
+ignore = true
+
+# zstd-sys declares only "MIT/Apache-2.0", which covers its Rust wrapper and the
+# generated bindings. It also vendors the Zstandard C sources under zstd/, and its
+# build script compiles them into the extension module, so the wheel redistributes
+# Zstandard itself. Zstandard is dual BSD-3-Clause/GPL-2.0; BSD-3-Clause is the
+# license taken here, and its Meta copyright notice has to be reproduced. Without
+# this clarification cargo-about attributes zstd-sys to Apache-2.0 alone and skips
+# zstd/COPYING with "failed to parse license 'GPL-2.0'", dropping the Zstandard
+# notice from the bundle.
+[zstd-sys.clarify]
+license = "Apache-2.0 AND BSD-3-Clause"
+
+[[zstd-sys.clarify.files]]
+checksum = "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+license = "Apache-2.0"
+path = "LICENSE.Apache-2.0"
+
+[[zstd-sys.clarify.files]]
+checksum = "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8"
+license = "BSD-3-Clause"
+path = "zstd/LICENSE"

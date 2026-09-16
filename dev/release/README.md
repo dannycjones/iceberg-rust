@@ -140,3 +140,50 @@ Use the dependency helper to update or verify dependency license lists:
 dev/release/dependencies.sh generate
 dev/release/dependencies.sh check
 ```
+
+`generate` writes each package's checked-in `DEPENDENCIES.rust.tsv`, which lists
+SPDX identifiers only. Packages that ship a compiled artifact also need the full
+license texts of the crates linked into it; those carry an `about.toml` (currently
+just `bindings/python`) and get a generated set of legal files:
+
+```shell
+dev/release/dependencies.sh generate-third-party-licenses
+```
+
+That writes `bindings/python/licenses/<wheel>/`, one directory per published
+wheel, each holding three files:
+
+- `THIRD-PARTY-LICENSES`, the full license text of every crate linked into that
+  wheel's extension module.
+- `NOTICE`, the project `NOTICE` plus the `NOTICE` files of those crates, which
+  Apache License 2.0 section 4(d) requires a derivative work to relay.
+- `LICENSE`, the project `LICENSE` plus a pointer to `THIRD-PARTY-LICENSES`.
+
+There is one set per wheel because the resolved crate graph depends on the target
+triple: a Windows wheel links crates a Linux wheel does not. Generating per target
+keeps each wheel's files an exact description of that wheel, which is what ASF
+policy requires of them. The wheel names are listed in `WHEEL_LICENSE_REPORTS` in
+`dependencies.sh`, and each wheel job's matrix entry names the one it needs.
+
+Nothing is packaged by generating. A wheel job stages one set into the package
+directory just before `maturin` runs:
+
+```shell
+dev/release/dependencies.sh stage-third-party-licenses x86_64-unknown-linux-gnu
+```
+
+Everything above is a build output rather than checked-in content, and
+`bindings/python/licenses/` is gitignored. Staging overwrites
+`bindings/python/LICENSE` and `bindings/python/NOTICE`, which are symlinks to the
+repository files in a clean tree, so it leaves the worktree dirty. Restore them
+with `git checkout -- bindings/python/LICENSE bindings/python/NOTICE` and delete
+`bindings/python/THIRD-PARTY-LICENSES`.
+
+Source distributions must carry none of this: they contain none of that code. The
+sdist jobs never stage, so they ship the plain symlinked `LICENSE` and `NOTICE`
+and no bundle.
+
+The commands above are for producing local copies to inspect.
+`dev/check_wheel_licenses.py <dir> [wheel]` asserts that built wheels actually
+contain all three files, and that they are the set generated for the named wheel
+rather than another platform's.

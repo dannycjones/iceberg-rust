@@ -26,3 +26,13 @@ dist/*
 *.pyc
 *.whl
 *.tar.gz
+
+# Generated at build time by `dev/release/dependencies.sh
+# generate-third-party-licenses` and bundled into the wheels. Not checked in:
+# its contents depend on the resolved dependency graph, not on the source tree.
+THIRD-PARTY-LICENSES
+
+# One subdirectory per published wheel, holding that wheel's generated LICENSE,
+# NOTICE, and THIRD-PARTY-LICENSES. `stage-third-party-licenses` copies one set
+# out of here into the package before maturin runs.
+bindings/python/licenses/
