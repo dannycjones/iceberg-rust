@@ -35,20 +35,31 @@ classifiers = [
 ]
 dynamic = ["version"]
 license = { file = "LICENSE" }
+# Declared so the wheel records them as `License-File:` metadata and stores them
+# under `.dist-info/licenses/`, where license scanners look. THIRD-PARTY-LICENSES
+# is a build output produced by `dev/release/dependencies.sh
+# generate-third-party-licenses`, not a file in the source tree.
+#
+# This key is format-agnostic, unlike `[tool.maturin] include` below, so an sdist
+# built in a tree where THIRD-PARTY-LICENSES happens to exist will also carry it.
+# Only the wheel jobs generate it, so released sdists do not; when it is absent
+# maturin drops both the file and its `License-File:` line, which is why it is not
+# excluded here -- excluding it would declare the metadata and omit the file.
+license-files = ["LICENSE", "NOTICE", "THIRD-PARTY-LICENSES"]
 name = "pyiceberg-core"
 readme = "project-description.md"
 requires-python = ">=3.10,<4"
 
 [tool.maturin]
 include = [
-  { path = "LICENSE", format = [
-    "sdist",
-    "wheel",
-  ] },
-  { path = "NOTICE", format = [
-    "sdist",
-    "wheel",
-  ] },
+  { path = "LICENSE", format = ["sdist", "wheel"] },
+  { path = "NOTICE", format = ["sdist", "wheel"] },
+  # The wheel statically links every Rust dependency into the extension module,
+  # so it must carry their license texts alongside LICENSE and NOTICE. Only the
+  # wheel is listed: an sdist ships source, which redistributes none of those
+  # dependencies. Generated before the build, not checked in; see
+  # `dev/release/dependencies.sh generate-third-party-licenses`.
+  { path = "THIRD-PARTY-LICENSES", format = ["wheel"] },
 ]
 module-name = "pyiceberg_core.pyiceberg_core_rust"
 profile = "release"

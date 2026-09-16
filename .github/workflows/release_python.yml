@@ -136,22 +136,75 @@ jobs:
           name: wheels-sdist
           path: bindings/python/dist
 
+  # The wheels statically link every Rust dependency, so they must carry those
+  # dependencies' license texts and relay their notices. Every set is generated
+  # here, on a runner that has a Rust toolchain and a POSIX shell, and handed to
+  # the wheel jobs as one artifact. The resolved crate graph differs by target, so
+  # there is one set per published wheel and each job stages the set matching the
+  # wheel it builds.
+  third-party-licenses:
+    runs-on: ubuntu-latest
+    needs: [validate-release-tag]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Rust toolchain
+        uses: $/.github/actions/setup-builder
+      # Keep the version in sync with EXPECTED_CARGO_ABOUT_VERSION in
+      # dev/release/dependencies.sh and the install-cargo-about target in Makefile.
+      - name: Install cargo-about
+        uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
+        with:
+          tool: cargo-about@0.8.4
+      # No cross toolchains are needed: cargo-about only evaluates cfg for each
+      # --target, it does not compile anything.
+      - name: Generate per-wheel LICENSE, NOTICE and THIRD-PARTY-LICENSES
+        shell: bash
+        run: bash ./dev/release/dependencies.sh generate-third-party-licenses
+      # One artifact holding every report, rather than one per wheel: the reports
+      # are small next to the wheels, and a single name keeps the download step
+      # identical in each job.
+      - name: Upload generated license files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: third-party-licenses
+          path: bindings/python/licenses
+          if-no-files-found: error
+
   wheels:
     runs-on: "${{ matrix.os }}"
-    needs: [validate-release-tag]
+    needs: [validate-release-tag, third-party-licenses]
     strategy:
       max-parallel: 15
+      # license_target names the report to stage, and must be one of the report
+      # names in WHEEL_LICENSE_REPORTS in dev/release/dependencies.sh. It is the
+      # Rust triple behind each maturin-action target shorthand, so the two lists
+      # have to be changed together whenever this matrix gains or loses a wheel.
       matrix:
         include:
-          - { os: windows-latest }
-          - { os: macos-latest, target: "universal2-apple-darwin" }
-          - { os: ubuntu-latest, target: "x86_64" }
+          - { os: windows-latest, license_target: "x86_64-pc-windows-msvc" }
+          - {
+              os: macos-latest,
+              target: "universal2-apple-darwin",
+              license_target: "universal2-apple-darwin",
+            }
+          - {
+              os: ubuntu-latest,
+              target: "x86_64",
+              license_target: "x86_64-unknown-linux-gnu",
+            }
           - {
               os: ubuntu-latest,
               target: "aarch64",
               manylinux: "manylinux_2_28",
+              license_target: "aarch64-unknown-linux-gnu",
             }
-          - { os: ubuntu-latest, target: "armv7l" }
+          - {
+              os: ubuntu-latest,
+              target: "armv7l",
+              license_target: "armv7-unknown-linux-gnueabihf",
+            }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -183,6 +236,20 @@ jobs:
         uses: $/.github/actions/setup-builder
         with:
           rust-version: ${{ steps.get-msrv.outputs.msrv }}
+      - name: Download generated license files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: third-party-licenses
+          path: bindings/python/licenses
+      # Must land before maturin runs: the three files are picked up by `include`
+      # in pyproject.toml. Staging replaces bindings/python/LICENSE and NOTICE,
+      # which are symlinks to the repository files; the script unlinks them first
+      # so the files that govern the source releases are left alone.
+      - name: Stage the license files for this wheel
+        shell: bash
+        run: |
+          bash ./dev/release/dependencies.sh stage-third-party-licenses \
+            "${{ matrix.license_target }}"
       - uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.target }}
@@ -190,6 +257,19 @@ jobs:
           working-directory: "bindings/python"
           command: build
           args: --release -o dist -i python3.12 # Explicitly set interpreter; manylinux containers have multiple Pythons and maturin may pick an older one
+      # `include` in pyproject.toml is glob-based, so a missing THIRD-PARTY-LICENSES
+      # silently produces a wheel without the license texts of the dependencies it
+      # statically links, and a wheel built without the generated NOTICE silently
+      # carries only the project's own notice. maturin warns about neither, so fail
+      # before anything is published. The report name is passed too, so a matrix
+      # that has drifted from WHEEL_LICENSE_REPORTS cannot publish a wheel carrying
+      # another platform's report.
+      - name: Verify wheel bundles third-party licenses
+        working-directory: "bindings/python"
+        shell: bash
+        run: |
+          python ../../dev/check_wheel_licenses.py dist \
+            "${{ matrix.license_target }}"
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.9.3"

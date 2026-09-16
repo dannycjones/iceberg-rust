@@ -89,6 +89,21 @@ check-public-api: install-cargo-public-api
 check-license-notice:
 	bash ./dev/check_license_notice.sh
 
+# Keep version in sync with EXPECTED_CARGO_ABOUT_VERSION in
+# dev/release/dependencies.sh and the third-party-licenses job in each Python
+# wheel workflow under .github/workflows/.
+install-cargo-about:
+	cargo install --locked cargo-about@0.8.4
+
+# Each wheel's LICENSE, NOTICE and THIRD-PARTY-LICENSES are build outputs, not
+# checked-in files: the wheel workflows generate them, then stage the set matching
+# the wheel being built. This target exists so they can be produced and inspected
+# locally, e.g. when reviewing a release candidate. It writes
+# bindings/python/licenses/<wheel>/ and stages nothing; see
+# `dev/release/dependencies.sh stage-third-party-licenses` for that.
+generate-third-party-licenses: install-cargo-about
+	bash ./dev/release/dependencies.sh generate-third-party-licenses
+
 check: check-fmt check-clippy check-toml cargo-machete check-license-notice
 
 doc-test:

@@ -184,6 +184,54 @@ Run the following command to verify the licenses meet the project's policy.
 dev/release/dependencies.sh check
 ```
 
+`DEPENDENCIES.rust.tsv` records only SPDX identifiers, which is enough for the
+source releases: publishing a crate to crates.io distributes that crate's source
+and nothing else. The `pyiceberg-core` wheels are different. They ship a compiled
+extension module that statically links every Rust dependency, so distributing a
+wheel redistributes those dependencies and triggers the attribution conditions of
+their licenses.
+
+So each wheel carries a `THIRD-PARTY-LICENSES` file holding the full license text
+of every crate linked into its extension module, and its own `LICENSE` and
+`NOTICE`. The wheel's `NOTICE` is the project `NOTICE` plus the `NOTICE` files of
+those crates, which Apache License 2.0 section 4(d) requires a derivative work to
+relay; per ASF policy nothing beyond those legally required notices is added to
+it, and the license texts stay out of it. The wheel's `LICENSE` is the project
+`LICENSE` plus a pointer to `THIRD-PARTY-LICENSES`.
+
+These files are generated per target, not once for all wheels: the resolved crate
+graph depends on the target triple, so a Windows wheel links crates a Linux wheel
+does not. Each wheel therefore carries files that describe exactly what is in that
+wheel, which is what ASF policy asks of `LICENSE` and `NOTICE`.
+
+All of it is a build output rather than checked-in content. The release workflow
+generates one set per wheel from the resolved dependency graph, hands them to the
+wheel jobs as a single artifact, and each job stages the set matching the wheel it
+builds. A job then fails if the built wheel does not contain all three files, or
+if the ones it contains were generated for a different wheel. The source
+distribution contains none of that code, so it correctly ships neither the bundle
+nor the augmented `LICENSE` and `NOTICE`.
+
+To produce copies locally, for example to review them during a release vote:
+
+```shell
+make generate-third-party-licenses
+```
+
+That writes `bindings/python/licenses/<wheel>/`, one directory per published wheel,
+all gitignored. To see what a wheel actually ships, stage one set into the package
+directory:
+
+```shell
+dev/release/dependencies.sh stage-third-party-licenses x86_64-unknown-linux-gnu
+```
+
+That overwrites `bindings/python/LICENSE` and `bindings/python/NOTICE`, which are
+symlinks to the repository files in a clean tree; restore them with
+`git checkout -- bindings/python/LICENSE bindings/python/NOTICE`. Generating needs
+the pinned `cargo-about` version; the script reports the exact `cargo install`
+command if it is missing or mismatched.
+
 #### Open pull request
 
 Open a pull request with all the changes.
