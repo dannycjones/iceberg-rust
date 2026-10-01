@@ -170,13 +170,7 @@ Update `CHANGELOG.md` based on the changes since the previous version.
 You may use generative AI to assist making this update, but please review the proposed changes for correctness.
 The changelog should reflect a summary of each commit in the new release.
 
-#### Update dependency lists
-
-Run the following command to update the dependencies list of every package:
-
-```shell
-dev/release/dependencies.sh generate
-```
+#### Verify dependency licenses
 
 Run the following command to verify the licenses meet the project's policy.
 CI already runs this check on every pull request, so it should pass. Running it here confirms the release branch meets the policy.
