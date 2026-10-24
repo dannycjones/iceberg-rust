@@ -34,8 +34,9 @@ use super::snapshot::SnapshotReference;
 pub use super::table_metadata_builder::{TableMetadataBuildResult, TableMetadataBuilder};
 use super::{
     DEFAULT_PARTITION_SPEC_ID, FieldId, PartitionFieldId, PartitionSpecRef,
-    PartitionStatisticsFile, Schema, SchemaId, SchemaRef, SnapshotRef, SnapshotRetention,
-    SortOrder, SortOrderRef, StatisticsFile, StructType, TableProperties, Transform,
+    PartitionStatisticsFile, Schema, SchemaId, SchemaRef, SnapshotId, SnapshotRef,
+    SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile, StructType, TableProperties,
+    Transform,
 };
 use crate::catalog::{METADATA_FOLDER_NAME, MetadataLocation};
 use crate::compression::CompressionCodec;
@@ -51,7 +52,7 @@ pub(crate) static ONE_MINUTE_MS: i64 = 60_000;
 /// Sentinel value used by the Java implementation and older metadata files
 /// to represent a missing/empty current snapshot ID. During deserialization,
 /// this value is normalized to `None`.
-pub(crate) static EMPTY_SNAPSHOT_ID: i64 = -1;
+pub(crate) static EMPTY_SNAPSHOT_ID: SnapshotId = -1;
 pub(crate) static INITIAL_SEQUENCE_NUMBER: i64 = 0;
 
 /// Initial row id for row lineage for new v3 tables and older tables upgrading to v3.
@@ -98,12 +99,12 @@ pub struct TableMetadata {
     pub(crate) properties: HashMap<String, String>,
     /// long ID of the current table snapshot; must be the same as the current
     /// ID of the main branch in refs.
-    pub(crate) current_snapshot_id: Option<i64>,
+    pub(crate) current_snapshot_id: Option<SnapshotId>,
     ///A list of valid snapshots. Valid snapshots are snapshots for which all
     /// data files exist in the file system. A data file must not be deleted
     /// from the file system until the last snapshot in which it was listed is
     /// garbage collected.
-    pub(crate) snapshots: HashMap<i64, SnapshotRef>,
+    pub(crate) snapshots: HashMap<SnapshotId, SnapshotRef>,
     /// A list (optional) of timestamp and snapshot ID pairs that encodes changes
     /// to the current snapshot for the table. Each time the current-snapshot-id
     /// is changed, a new entry should be added with the last-updated-ms
@@ -132,9 +133,9 @@ pub struct TableMetadata {
     /// even if the refs map is null.
     pub(crate) refs: HashMap<String, SnapshotReference>,
     /// Mapping of snapshot ids to statistics files.
-    pub(crate) statistics: HashMap<i64, StatisticsFile>,
+    pub(crate) statistics: HashMap<SnapshotId, StatisticsFile>,
     /// Mapping of snapshot ids to partition statistics files.
-    pub(crate) partition_statistics: HashMap<i64, PartitionStatisticsFile>,
+    pub(crate) partition_statistics: HashMap<SnapshotId, PartitionStatisticsFile>,
     /// Encryption Keys - map of key id to the actual key
     pub(crate) encryption_keys: HashMap<String, EncryptedKey>,
     /// Next row id to be assigned for Row Lineage (v3)
@@ -305,7 +306,7 @@ impl TableMetadata {
 
     /// Lookup snapshot by id.
     #[inline]
-    pub fn snapshot_by_id(&self, snapshot_id: i64) -> Option<&SnapshotRef> {
+    pub fn snapshot_by_id(&self, snapshot_id: SnapshotId) -> Option<&SnapshotRef> {
         self.snapshots.get(&snapshot_id)
     }
 
@@ -332,7 +333,7 @@ impl TableMetadata {
 
     /// Get the current snapshot id
     #[inline]
-    pub fn current_snapshot_id(&self) -> Option<i64> {
+    pub fn current_snapshot_id(&self) -> Option<SnapshotId> {
         self.current_snapshot_id
     }
 
@@ -423,7 +424,7 @@ impl TableMetadata {
 
     /// Get a statistics file for a snapshot id.
     #[inline]
-    pub fn statistics_for_snapshot(&self, snapshot_id: i64) -> Option<&StatisticsFile> {
+    pub fn statistics_for_snapshot(&self, snapshot_id: SnapshotId) -> Option<&StatisticsFile> {
         self.statistics.get(&snapshot_id)
     }
 
@@ -431,7 +432,7 @@ impl TableMetadata {
     #[inline]
     pub fn partition_statistics_for_snapshot(
         &self,
-        snapshot_id: i64,
+        snapshot_id: SnapshotId,
     ) -> Option<&PartitionStatisticsFile> {
         self.partition_statistics.get(&snapshot_id)
     }
@@ -784,8 +785,8 @@ pub(super) mod _serde {
     use crate::spec::snapshot::_serde::{SnapshotV1, SnapshotV2, SnapshotV3};
     use crate::spec::{
         EncryptedKey, FieldId, INITIAL_ROW_ID, PartitionField, PartitionFieldId, PartitionSpec,
-        PartitionSpecRef, PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotReference,
-        SnapshotRetention, SortOrder, StatisticsFile, UnboundPartitionSpec,
+        PartitionSpecRef, PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotId,
+        SnapshotReference, SnapshotRetention, SortOrder, StatisticsFile, UnboundPartitionSpec,
     };
     use crate::{Error, ErrorKind};
 
@@ -828,7 +829,7 @@ pub(super) mod _serde {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub properties: Option<HashMap<String, String>>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub current_snapshot_id: Option<i64>,
+        pub current_snapshot_id: Option<SnapshotId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub snapshot_log: Option<Vec<SnapshotLog>>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -881,7 +882,7 @@ pub(super) mod _serde {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub properties: Option<HashMap<String, String>>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub current_snapshot_id: Option<i64>,
+        pub current_snapshot_id: Option<SnapshotId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub snapshots: Option<Vec<SnapshotV1>>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -1502,7 +1503,7 @@ pub(super) mod _serde {
         }
     }
 
-    fn index_statistics(statistics: Vec<StatisticsFile>) -> HashMap<i64, StatisticsFile> {
+    fn index_statistics(statistics: Vec<StatisticsFile>) -> HashMap<SnapshotId, StatisticsFile> {
         statistics
             .into_iter()
             .rev()
@@ -1512,7 +1513,7 @@ pub(super) mod _serde {
 
     fn index_partition_statistics(
         statistics: Vec<PartitionStatisticsFile>,
-    ) -> HashMap<i64, PartitionStatisticsFile> {
+    ) -> HashMap<SnapshotId, PartitionStatisticsFile> {
         statistics
             .into_iter()
             .rev()
@@ -1570,7 +1571,7 @@ pub struct MetadataLog {
 /// A log of when each snapshot was made.
 pub struct SnapshotLog {
     /// Id of the snapshot.
-    pub snapshot_id: i64,
+    pub snapshot_id: SnapshotId,
     /// Last updated timestamp
     pub timestamp_ms: i64,
 }

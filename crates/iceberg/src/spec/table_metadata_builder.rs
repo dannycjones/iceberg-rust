@@ -28,7 +28,7 @@ use super::{
     TableProperties, Transform, UNPARTITIONED_LAST_ASSIGNED_ID, UnboundPartitionSpec,
 };
 use crate::error::{Error, ErrorKind, Result, invalid_data};
-use crate::spec::{EncryptedKey, INITIAL_ROW_ID, MIN_FORMAT_VERSION_ROW_LINEAGE};
+use crate::spec::{EncryptedKey, INITIAL_ROW_ID, MIN_FORMAT_VERSION_ROW_LINEAGE, SnapshotId};
 use crate::{TableCreation, TableUpdate};
 
 pub(crate) const FIRST_FIELD_ID: FieldId = 1;
@@ -455,7 +455,7 @@ impl TableMetadataBuilder {
     /// Remove snapshots by its ids from the table metadata.
     /// Does nothing if a snapshot id is not present.
     /// Keeps as changes only the snapshots that were actually removed.
-    pub fn remove_snapshots(mut self, snapshot_ids: &[i64]) -> Self {
+    pub fn remove_snapshots(mut self, snapshot_ids: &[SnapshotId]) -> Self {
         let mut removed_snapshots = Vec::with_capacity(snapshot_ids.len());
 
         self.metadata.snapshots.retain(|k, _| {
@@ -565,7 +565,7 @@ impl TableMetadataBuilder {
     }
 
     /// Remove statistics for a snapshot
-    pub fn remove_statistics(mut self, snapshot_id: i64) -> Self {
+    pub fn remove_statistics(mut self, snapshot_id: SnapshotId) -> Self {
         let previous = self.metadata.statistics.remove(&snapshot_id);
         if previous.is_some() {
             self.changes
@@ -590,7 +590,7 @@ impl TableMetadataBuilder {
     }
 
     /// Remove partition statistics
-    pub fn remove_partition_statistics(mut self, snapshot_id: i64) -> Self {
+    pub fn remove_partition_statistics(mut self, snapshot_id: SnapshotId) -> Self {
         let previous = self.metadata.partition_statistics.remove(&snapshot_id);
         if previous.is_some() {
             self.changes
@@ -1192,7 +1192,7 @@ impl TableMetadataBuilder {
     /// be corrected by suppressing the intermediate snapshot entries.
     ///     
     /// A snapshot is an intermediate snapshot if it was added but is not the current snapshot.
-    fn get_intermediate_snapshots(&self) -> HashSet<i64> {
+    fn get_intermediate_snapshots(&self) -> HashSet<SnapshotId> {
         let added_snapshot_ids = self
             .changes
             .iter()

@@ -18,7 +18,7 @@
 use futures::TryStreamExt;
 
 use crate::scan::FileScanTask;
-use crate::spec::DataFile;
+use crate::spec::{DataFile, SnapshotId};
 
 /// A data file selected for COW rewrite.
 ///
@@ -53,7 +53,7 @@ impl CowRewriteFile {
 pub(crate) async fn plan_cow_rewrite_files(
     table: &crate::table::Table,
     predicate: Option<crate::expr::Predicate>,
-    snapshot_id: Option<i64>,
+    snapshot_id: Option<SnapshotId>,
     case_sensitive: bool,
 ) -> crate::Result<Vec<CowRewriteFile>> {
     let mut scan_builder = table

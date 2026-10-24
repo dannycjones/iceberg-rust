@@ -190,7 +190,7 @@ pub fn iceberg::cow_rewrite::CowRewriteBuilder<'a>::with_batch_size(self, batch_
 pub fn iceberg::cow_rewrite::CowRewriteBuilder<'a>::with_case_sensitive(self, case_sensitive: bool) -> Self
 pub fn iceberg::cow_rewrite::CowRewriteBuilder<'a>::with_predicate(self, predicate: iceberg::expr::Predicate) -> Self
 pub fn iceberg::cow_rewrite::CowRewriteBuilder<'a>::with_rewriter(self, rewriter: alloc::sync::Arc<dyn iceberg::cow_rewrite::CowBatchRewriter>) -> Self
-pub fn iceberg::cow_rewrite::CowRewriteBuilder<'a>::with_snapshot_id(self, snapshot_id: i64) -> Self
+pub fn iceberg::cow_rewrite::CowRewriteBuilder<'a>::with_snapshot_id(self, snapshot_id: iceberg::spec::SnapshotId) -> Self
 pub struct iceberg::cow_rewrite::CowRewriteFile
 impl iceberg::cow_rewrite::CowRewriteFile
 pub fn iceberg::cow_rewrite::CowRewriteFile::old_data_file(&self) -> &iceberg::spec::DataFile
@@ -1290,7 +1290,7 @@ pub fn iceberg::puffin::Blob::data(&self) -> &[u8]
 pub fn iceberg::puffin::Blob::fields(&self) -> &[iceberg::spec::FieldId]
 pub fn iceberg::puffin::Blob::properties(&self) -> &std::collections::hash::map::HashMap<alloc::string::String, alloc::string::String>
 pub fn iceberg::puffin::Blob::sequence_number(&self) -> i64
-pub fn iceberg::puffin::Blob::snapshot_id(&self) -> i64
+pub fn iceberg::puffin::Blob::snapshot_id(&self) -> iceberg::spec::SnapshotId
 impl core::clone::Clone for iceberg::puffin::Blob
 pub fn iceberg::puffin::Blob::clone(&self) -> iceberg::puffin::Blob
 impl core::cmp::PartialEq for iceberg::puffin::Blob
@@ -1309,7 +1309,7 @@ pub fn iceberg::puffin::BlobMetadata::length(&self) -> u64
 pub fn iceberg::puffin::BlobMetadata::offset(&self) -> u64
 pub fn iceberg::puffin::BlobMetadata::properties(&self) -> &std::collections::hash::map::HashMap<alloc::string::String, alloc::string::String>
 pub fn iceberg::puffin::BlobMetadata::sequence_number(&self) -> i64
-pub fn iceberg::puffin::BlobMetadata::snapshot_id(&self) -> i64
+pub fn iceberg::puffin::BlobMetadata::snapshot_id(&self) -> iceberg::spec::SnapshotId
 impl core::clone::Clone for iceberg::puffin::BlobMetadata
 pub fn iceberg::puffin::BlobMetadata::clone(&self) -> iceberg::puffin::BlobMetadata
 impl core::cmp::Eq for iceberg::puffin::BlobMetadata
@@ -1447,7 +1447,7 @@ pub fn iceberg::scan::TableScanBuilder<'a>::build(self) -> iceberg::Result<icebe
 pub fn iceberg::scan::TableScanBuilder<'a>::select(self, column_names: impl core::iter::traits::collect::IntoIterator<Item = impl alloc::string::ToString>) -> Self
 pub fn iceberg::scan::TableScanBuilder<'a>::select_all(self) -> Self
 pub fn iceberg::scan::TableScanBuilder<'a>::select_empty(self) -> Self
-pub fn iceberg::scan::TableScanBuilder<'a>::snapshot_id(self, snapshot_id: i64) -> Self
+pub fn iceberg::scan::TableScanBuilder<'a>::snapshot_id(self, snapshot_id: iceberg::spec::SnapshotId) -> Self
 pub fn iceberg::scan::TableScanBuilder<'a>::with_batch_size(self, batch_size: core::option::Option<usize>) -> Self
 pub fn iceberg::scan::TableScanBuilder<'a>::with_bloom_filter_enabled(self, bloom_filter_enabled: bool) -> Self
 pub fn iceberg::scan::TableScanBuilder<'a>::with_case_sensitive(self, case_sensitive: bool) -> Self
@@ -2012,7 +2012,7 @@ pub struct iceberg::spec::BlobMetadata
 pub iceberg::spec::BlobMetadata::fields: alloc::vec::Vec<iceberg::spec::FieldId>
 pub iceberg::spec::BlobMetadata::properties: std::collections::hash::map::HashMap<alloc::string::String, alloc::string::String>
 pub iceberg::spec::BlobMetadata::sequence_number: i64
-pub iceberg::spec::BlobMetadata::snapshot_id: i64
+pub iceberg::spec::BlobMetadata::snapshot_id: iceberg::spec::SnapshotId
 pub iceberg::spec::BlobMetadata::type: alloc::string::String
 impl core::clone::Clone for iceberg::spec::BlobMetadata
 pub fn iceberg::spec::BlobMetadata::clone(&self) -> iceberg::spec::BlobMetadata
@@ -2258,7 +2258,7 @@ pub struct iceberg::spec::ManifestEntry
 pub iceberg::spec::ManifestEntry::data_file: iceberg::spec::DataFile
 pub iceberg::spec::ManifestEntry::file_sequence_number: core::option::Option<i64>
 pub iceberg::spec::ManifestEntry::sequence_number: core::option::Option<i64>
-pub iceberg::spec::ManifestEntry::snapshot_id: core::option::Option<i64>
+pub iceberg::spec::ManifestEntry::snapshot_id: core::option::Option<iceberg::spec::SnapshotId>
 pub iceberg::spec::ManifestEntry::status: iceberg::spec::ManifestStatus
 impl iceberg::spec::ManifestEntry
 pub fn iceberg::spec::ManifestEntry::content_type(&self) -> iceberg::spec::DataContentType
@@ -2269,7 +2269,7 @@ pub fn iceberg::spec::ManifestEntry::file_size_in_bytes(&self) -> u64
 pub fn iceberg::spec::ManifestEntry::is_alive(&self) -> bool
 pub fn iceberg::spec::ManifestEntry::record_count(&self) -> u64
 pub fn iceberg::spec::ManifestEntry::sequence_number(&self) -> core::option::Option<i64>
-pub fn iceberg::spec::ManifestEntry::snapshot_id(&self) -> core::option::Option<i64>
+pub fn iceberg::spec::ManifestEntry::snapshot_id(&self) -> core::option::Option<iceberg::spec::SnapshotId>
 pub fn iceberg::spec::ManifestEntry::status(&self) -> iceberg::spec::ManifestStatus
 impl core::clone::Clone for iceberg::spec::ManifestEntry
 pub fn iceberg::spec::ManifestEntry::clone(&self) -> iceberg::spec::ManifestEntry
@@ -2284,7 +2284,7 @@ pub fn iceberg::spec::ManifestEntry::builder() -> ManifestEntryBuilder<((), (), 
 pub struct iceberg::spec::ManifestFile
 pub iceberg::spec::ManifestFile::added_files_count: core::option::Option<u32>
 pub iceberg::spec::ManifestFile::added_rows_count: core::option::Option<u64>
-pub iceberg::spec::ManifestFile::added_snapshot_id: i64
+pub iceberg::spec::ManifestFile::added_snapshot_id: iceberg::spec::SnapshotId
 pub iceberg::spec::ManifestFile::content: iceberg::spec::ManifestContentType
 pub iceberg::spec::ManifestFile::deleted_files_count: core::option::Option<u32>
 pub iceberg::spec::ManifestFile::deleted_rows_count: core::option::Option<u64>
@@ -2332,9 +2332,9 @@ impl iceberg::spec::ManifestListWriter
 pub fn iceberg::spec::ManifestListWriter::add_manifests(&mut self, manifests: impl core::iter::traits::iterator::Iterator<Item = iceberg::spec::ManifestFile>) -> iceberg::Result<()>
 pub async fn iceberg::spec::ManifestListWriter::close(self) -> iceberg::Result<iceberg::io::FileMetadata>
 pub fn iceberg::spec::ManifestListWriter::next_row_id(&self) -> core::option::Option<u64>
-pub fn iceberg::spec::ManifestListWriter::v1(writer: alloc::boxed::Box<dyn iceberg::io::FileWrite>, snapshot_id: i64, parent_snapshot_id: core::option::Option<i64>) -> Self
-pub fn iceberg::spec::ManifestListWriter::v2(writer: alloc::boxed::Box<dyn iceberg::io::FileWrite>, snapshot_id: i64, parent_snapshot_id: core::option::Option<i64>, sequence_number: i64) -> Self
-pub fn iceberg::spec::ManifestListWriter::v3(writer: alloc::boxed::Box<dyn iceberg::io::FileWrite>, snapshot_id: i64, parent_snapshot_id: core::option::Option<i64>, sequence_number: i64, first_row_id: core::option::Option<u64>) -> Self
+pub fn iceberg::spec::ManifestListWriter::v1(writer: alloc::boxed::Box<dyn iceberg::io::FileWrite>, snapshot_id: iceberg::spec::SnapshotId, parent_snapshot_id: core::option::Option<iceberg::spec::SnapshotId>) -> Self
+pub fn iceberg::spec::ManifestListWriter::v2(writer: alloc::boxed::Box<dyn iceberg::io::FileWrite>, snapshot_id: iceberg::spec::SnapshotId, parent_snapshot_id: core::option::Option<iceberg::spec::SnapshotId>, sequence_number: i64) -> Self
+pub fn iceberg::spec::ManifestListWriter::v3(writer: alloc::boxed::Box<dyn iceberg::io::FileWrite>, snapshot_id: iceberg::spec::SnapshotId, parent_snapshot_id: core::option::Option<iceberg::spec::SnapshotId>, sequence_number: i64, first_row_id: core::option::Option<u64>) -> Self
 impl core::fmt::Debug for iceberg::spec::ManifestListWriter
 pub fn iceberg::spec::ManifestListWriter::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 pub struct iceberg::spec::ManifestMetadata
@@ -2366,7 +2366,7 @@ pub async fn iceberg::spec::ManifestReader::read(self, manifest_file: &iceberg::
 pub struct iceberg::spec::ManifestWriter
 impl iceberg::spec::ManifestWriter
 pub fn iceberg::spec::ManifestWriter::add_delete_file(&mut self, data_file: iceberg::spec::DataFile, sequence_number: i64, file_sequence_number: core::option::Option<i64>) -> iceberg::Result<()>
-pub fn iceberg::spec::ManifestWriter::add_existing_file(&mut self, data_file: iceberg::spec::DataFile, snapshot_id: i64, sequence_number: i64, file_sequence_number: core::option::Option<i64>) -> iceberg::Result<()>
+pub fn iceberg::spec::ManifestWriter::add_existing_file(&mut self, data_file: iceberg::spec::DataFile, snapshot_id: iceberg::spec::SnapshotId, sequence_number: i64, file_sequence_number: core::option::Option<i64>) -> iceberg::Result<()>
 pub fn iceberg::spec::ManifestWriter::add_file(&mut self, data_file: iceberg::spec::DataFile, sequence_number: i64) -> iceberg::Result<()>
 pub async fn iceberg::spec::ManifestWriter::write_manifest_file(self) -> iceberg::Result<iceberg::spec::ManifestFile>
 pub struct iceberg::spec::ManifestWriterBuilder
@@ -2376,8 +2376,8 @@ pub fn iceberg::spec::ManifestWriterBuilder::build_v2_data(self) -> iceberg::spe
 pub fn iceberg::spec::ManifestWriterBuilder::build_v2_deletes(self) -> iceberg::spec::ManifestWriter
 pub fn iceberg::spec::ManifestWriterBuilder::build_v3_data(self) -> iceberg::spec::ManifestWriter
 pub fn iceberg::spec::ManifestWriterBuilder::build_v3_deletes(self) -> iceberg::spec::ManifestWriter
-pub fn iceberg::spec::ManifestWriterBuilder::new(output: iceberg::io::OutputFile, snapshot_id: core::option::Option<i64>, schema: iceberg::spec::SchemaRef, partition_spec: iceberg::spec::PartitionSpec) -> Self
-pub fn iceberg::spec::ManifestWriterBuilder::new_from_encrypted(encrypted_output: iceberg::encryption::EncryptedOutputFile, snapshot_id: core::option::Option<i64>, schema: iceberg::spec::SchemaRef, partition_spec: iceberg::spec::PartitionSpec) -> iceberg::Result<Self>
+pub fn iceberg::spec::ManifestWriterBuilder::new(output: iceberg::io::OutputFile, snapshot_id: core::option::Option<iceberg::spec::SnapshotId>, schema: iceberg::spec::SchemaRef, partition_spec: iceberg::spec::PartitionSpec) -> Self
+pub fn iceberg::spec::ManifestWriterBuilder::new_from_encrypted(encrypted_output: iceberg::encryption::EncryptedOutputFile, snapshot_id: core::option::Option<iceberg::spec::SnapshotId>, schema: iceberg::spec::SchemaRef, partition_spec: iceberg::spec::PartitionSpec) -> iceberg::Result<Self>
 pub struct iceberg::spec::Map
 impl iceberg::spec::Map
 pub fn iceberg::spec::Map::get(&self, key: &iceberg::spec::Literal) -> core::option::Option<&core::option::Option<iceberg::spec::Literal>>
@@ -2585,7 +2585,7 @@ impl core::fmt::Debug for iceberg::spec::PartitionSpecBuilder
 pub fn iceberg::spec::PartitionSpecBuilder::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 pub struct iceberg::spec::PartitionStatisticsFile
 pub iceberg::spec::PartitionStatisticsFile::file_size_in_bytes: i64
-pub iceberg::spec::PartitionStatisticsFile::snapshot_id: i64
+pub iceberg::spec::PartitionStatisticsFile::snapshot_id: iceberg::spec::SnapshotId
 pub iceberg::spec::PartitionStatisticsFile::statistics_path: alloc::string::String
 impl core::clone::Clone for iceberg::spec::PartitionStatisticsFile
 pub fn iceberg::spec::PartitionStatisticsFile::clone(&self) -> iceberg::spec::PartitionStatisticsFile
@@ -2653,12 +2653,12 @@ pub fn iceberg::spec::Snapshot::added_rows_count(&self) -> core::option::Option<
 pub fn iceberg::spec::Snapshot::encryption_key_id(&self) -> core::option::Option<&str>
 pub fn iceberg::spec::Snapshot::first_row_id(&self) -> core::option::Option<u64>
 pub fn iceberg::spec::Snapshot::manifest_list(&self) -> &str
-pub fn iceberg::spec::Snapshot::parent_snapshot_id(&self) -> core::option::Option<i64>
+pub fn iceberg::spec::Snapshot::parent_snapshot_id(&self) -> core::option::Option<iceberg::spec::SnapshotId>
 pub fn iceberg::spec::Snapshot::row_range(&self) -> core::option::Option<(u64, u64)>
 pub fn iceberg::spec::Snapshot::schema(&self, table_metadata: &iceberg::spec::TableMetadata) -> iceberg::Result<iceberg::spec::SchemaRef>
 pub fn iceberg::spec::Snapshot::schema_id(&self) -> core::option::Option<iceberg::spec::SchemaId>
 pub fn iceberg::spec::Snapshot::sequence_number(&self) -> i64
-pub fn iceberg::spec::Snapshot::snapshot_id(&self) -> i64
+pub fn iceberg::spec::Snapshot::snapshot_id(&self) -> iceberg::spec::SnapshotId
 pub fn iceberg::spec::Snapshot::summary(&self) -> &iceberg::spec::Summary
 pub fn iceberg::spec::Snapshot::timestamp(&self) -> iceberg::Result<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
 pub fn iceberg::spec::Snapshot::timestamp_ms(&self) -> i64
@@ -2673,7 +2673,7 @@ impl core::marker::StructuralPartialEq for iceberg::spec::Snapshot
 impl iceberg::spec::Snapshot
 pub fn iceberg::spec::Snapshot::builder() -> SnapshotBuilder<((), (), (), (), (), (), (), (), ())>
 pub struct iceberg::spec::SnapshotLog
-pub iceberg::spec::SnapshotLog::snapshot_id: i64
+pub iceberg::spec::SnapshotLog::snapshot_id: iceberg::spec::SnapshotId
 pub iceberg::spec::SnapshotLog::timestamp_ms: i64
 impl iceberg::spec::SnapshotLog
 pub fn iceberg::spec::SnapshotLog::timestamp(self) -> iceberg::Result<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
@@ -2692,11 +2692,11 @@ impl<'de> serde_core::de::Deserialize<'de> for iceberg::spec::SnapshotLog
 pub fn iceberg::spec::SnapshotLog::deserialize<__D>(__deserializer: __D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 pub struct iceberg::spec::SnapshotReference
 pub iceberg::spec::SnapshotReference::retention: iceberg::spec::SnapshotRetention
-pub iceberg::spec::SnapshotReference::snapshot_id: i64
+pub iceberg::spec::SnapshotReference::snapshot_id: iceberg::spec::SnapshotId
 impl iceberg::spec::SnapshotReference
 pub fn iceberg::spec::SnapshotReference::is_branch(&self) -> bool
 impl iceberg::spec::SnapshotReference
-pub fn iceberg::spec::SnapshotReference::new(snapshot_id: i64, retention: iceberg::spec::SnapshotRetention) -> Self
+pub fn iceberg::spec::SnapshotReference::new(snapshot_id: iceberg::spec::SnapshotId, retention: iceberg::spec::SnapshotRetention) -> Self
 impl core::clone::Clone for iceberg::spec::SnapshotReference
 pub fn iceberg::spec::SnapshotReference::clone(&self) -> iceberg::spec::SnapshotReference
 impl core::cmp::Eq for iceberg::spec::SnapshotReference
@@ -2809,7 +2809,7 @@ pub iceberg::spec::StatisticsFile::blob_metadata: alloc::vec::Vec<iceberg::spec:
 pub iceberg::spec::StatisticsFile::file_footer_size_in_bytes: i64
 pub iceberg::spec::StatisticsFile::file_size_in_bytes: i64
 pub iceberg::spec::StatisticsFile::key_metadata: core::option::Option<alloc::string::String>
-pub iceberg::spec::StatisticsFile::snapshot_id: i64
+pub iceberg::spec::StatisticsFile::snapshot_id: iceberg::spec::SnapshotId
 pub iceberg::spec::StatisticsFile::statistics_path: alloc::string::String
 impl core::clone::Clone for iceberg::spec::StatisticsFile
 pub fn iceberg::spec::StatisticsFile::clone(&self) -> iceberg::spec::StatisticsFile
@@ -2894,7 +2894,7 @@ impl iceberg::spec::TableMetadata
 pub fn iceberg::spec::TableMetadata::current_schema(&self) -> &iceberg::spec::SchemaRef
 pub fn iceberg::spec::TableMetadata::current_schema_id(&self) -> iceberg::spec::SchemaId
 pub fn iceberg::spec::TableMetadata::current_snapshot(&self) -> core::option::Option<&iceberg::spec::SnapshotRef>
-pub fn iceberg::spec::TableMetadata::current_snapshot_id(&self) -> core::option::Option<i64>
+pub fn iceberg::spec::TableMetadata::current_snapshot_id(&self) -> core::option::Option<iceberg::spec::SnapshotId>
 pub fn iceberg::spec::TableMetadata::default_partition_spec(&self) -> &iceberg::spec::PartitionSpecRef
 pub fn iceberg::spec::TableMetadata::default_partition_spec_id(&self) -> i32
 pub fn iceberg::spec::TableMetadata::default_partition_type(&self) -> &iceberg::spec::StructType
@@ -2918,18 +2918,18 @@ pub fn iceberg::spec::TableMetadata::next_row_id(&self) -> u64
 pub fn iceberg::spec::TableMetadata::next_sequence_number(&self) -> i64
 pub fn iceberg::spec::TableMetadata::partition_spec_by_id(&self, spec_id: i32) -> core::option::Option<&iceberg::spec::PartitionSpecRef>
 pub fn iceberg::spec::TableMetadata::partition_specs_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::PartitionSpecRef>
-pub fn iceberg::spec::TableMetadata::partition_statistics_for_snapshot(&self, snapshot_id: i64) -> core::option::Option<&iceberg::spec::PartitionStatisticsFile>
+pub fn iceberg::spec::TableMetadata::partition_statistics_for_snapshot(&self, snapshot_id: iceberg::spec::SnapshotId) -> core::option::Option<&iceberg::spec::PartitionStatisticsFile>
 pub fn iceberg::spec::TableMetadata::partition_statistics_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::PartitionStatisticsFile>
 pub fn iceberg::spec::TableMetadata::properties(&self) -> &std::collections::hash::map::HashMap<alloc::string::String, alloc::string::String>
 pub async fn iceberg::spec::TableMetadata::read_from(file_io: &iceberg::io::FileIO, metadata_location: impl core::convert::AsRef<str>) -> iceberg::Result<iceberg::spec::TableMetadata>
 pub fn iceberg::spec::TableMetadata::schema_by_id(&self, schema_id: iceberg::spec::SchemaId) -> core::option::Option<&iceberg::spec::SchemaRef>
 pub fn iceberg::spec::TableMetadata::schemas_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::SchemaRef>
-pub fn iceberg::spec::TableMetadata::snapshot_by_id(&self, snapshot_id: i64) -> core::option::Option<&iceberg::spec::SnapshotRef>
+pub fn iceberg::spec::TableMetadata::snapshot_by_id(&self, snapshot_id: iceberg::spec::SnapshotId) -> core::option::Option<&iceberg::spec::SnapshotRef>
 pub fn iceberg::spec::TableMetadata::snapshot_for_ref(&self, ref_name: &str) -> core::option::Option<&iceberg::spec::SnapshotRef>
 pub fn iceberg::spec::TableMetadata::snapshots(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::SnapshotRef>
 pub fn iceberg::spec::TableMetadata::sort_order_by_id(&self, sort_order_id: i64) -> core::option::Option<&iceberg::spec::SortOrderRef>
 pub fn iceberg::spec::TableMetadata::sort_orders_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::SortOrderRef>
-pub fn iceberg::spec::TableMetadata::statistics_for_snapshot(&self, snapshot_id: i64) -> core::option::Option<&iceberg::spec::StatisticsFile>
+pub fn iceberg::spec::TableMetadata::statistics_for_snapshot(&self, snapshot_id: iceberg::spec::SnapshotId) -> core::option::Option<&iceberg::spec::StatisticsFile>
 pub fn iceberg::spec::TableMetadata::statistics_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::StatisticsFile>
 pub fn iceberg::spec::TableMetadata::table_properties(&self) -> iceberg::spec::TableProperties<'_>
 pub fn iceberg::spec::TableMetadata::unified_partition_type(&self, schema: &iceberg::spec::Schema) -> iceberg::Result<iceberg::spec::StructType>
@@ -2979,12 +2979,12 @@ pub fn iceberg::spec::TableMetadataBuilder::new(schema: iceberg::spec::Schema, s
 pub fn iceberg::spec::TableMetadataBuilder::new_from_metadata(previous: iceberg::spec::TableMetadata, current_file_location: core::option::Option<alloc::string::String>) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::remove_encryption_key(self, key_id: &str) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::remove_partition_specs(self, spec_ids: &[i32]) -> iceberg::Result<Self>
-pub fn iceberg::spec::TableMetadataBuilder::remove_partition_statistics(self, snapshot_id: i64) -> Self
+pub fn iceberg::spec::TableMetadataBuilder::remove_partition_statistics(self, snapshot_id: iceberg::spec::SnapshotId) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::remove_properties(self, properties: &[alloc::string::String]) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::remove_ref(self, ref_name: &str) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::remove_schemas(self, schema_id_to_remove: &[i32]) -> iceberg::Result<Self>
-pub fn iceberg::spec::TableMetadataBuilder::remove_snapshots(self, snapshot_ids: &[i64]) -> Self
-pub fn iceberg::spec::TableMetadataBuilder::remove_statistics(self, snapshot_id: i64) -> Self
+pub fn iceberg::spec::TableMetadataBuilder::remove_snapshots(self, snapshot_ids: &[iceberg::spec::SnapshotId]) -> Self
+pub fn iceberg::spec::TableMetadataBuilder::remove_statistics(self, snapshot_id: iceberg::spec::SnapshotId) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::set_branch_snapshot(self, snapshot: iceberg::spec::Snapshot, branch: &str) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::set_current_schema(self, schema_id: i32) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::set_default_partition_spec(self, spec_id: i32) -> iceberg::Result<Self>
@@ -3374,6 +3374,7 @@ pub type iceberg::spec::PartitionFieldId = i32
 pub type iceberg::spec::PartitionSpecRef = alloc::sync::Arc<iceberg::spec::PartitionSpec>
 pub type iceberg::spec::SchemaId = i32
 pub type iceberg::spec::SchemaRef = alloc::sync::Arc<iceberg::spec::Schema>
+pub type iceberg::spec::SnapshotId = i64
 pub type iceberg::spec::SnapshotRef = alloc::sync::Arc<iceberg::spec::Snapshot>
 pub type iceberg::spec::SortOrderRef = alloc::sync::Arc<iceberg::spec::SortOrder>
 pub type iceberg::spec::TableMetadataRef = alloc::sync::Arc<iceberg::spec::TableMetadata>
@@ -3445,7 +3446,7 @@ pub fn iceberg::transaction::AddColumn::builder() -> AddColumnBuilder<((), (), (
 pub struct iceberg::transaction::ExpireSnapshotsAction
 impl iceberg::transaction::ExpireSnapshotsAction
 pub fn iceberg::transaction::ExpireSnapshotsAction::expire_older_than_ms(self, older_than_ms: i64) -> Self
-pub fn iceberg::transaction::ExpireSnapshotsAction::expire_snapshot_ids(self, snapshot_ids: impl core::iter::traits::collect::IntoIterator<Item = i64>) -> Self
+pub fn iceberg::transaction::ExpireSnapshotsAction::expire_snapshot_ids(self, snapshot_ids: impl core::iter::traits::collect::IntoIterator<Item = iceberg::spec::SnapshotId>) -> Self
 pub fn iceberg::transaction::ExpireSnapshotsAction::retain_last(self, retain_last: usize) -> Self
 impl core::clone::Clone for iceberg::transaction::ExpireSnapshotsAction
 pub fn iceberg::transaction::ExpireSnapshotsAction::clone(&self) -> iceberg::transaction::ExpireSnapshotsAction
@@ -3496,7 +3497,7 @@ impl core::clone::Clone for iceberg::transaction::UpdateSchemaAction
 pub fn iceberg::transaction::UpdateSchemaAction::clone(&self) -> iceberg::transaction::UpdateSchemaAction
 pub struct iceberg::transaction::UpdateStatisticsAction
 impl iceberg::transaction::UpdateStatisticsAction
-pub fn iceberg::transaction::UpdateStatisticsAction::remove_statistics(self, snapshot_id: i64) -> Self
+pub fn iceberg::transaction::UpdateStatisticsAction::remove_statistics(self, snapshot_id: iceberg::spec::SnapshotId) -> Self
 pub fn iceberg::transaction::UpdateStatisticsAction::set_statistics(self, statistics_file: iceberg::spec::StatisticsFile) -> Self
 impl core::clone::Clone for iceberg::transaction::UpdateStatisticsAction
 pub fn iceberg::transaction::UpdateStatisticsAction::clone(&self) -> iceberg::transaction::UpdateStatisticsAction
@@ -3519,9 +3520,9 @@ pub type iceberg::transform::BoxedTransformFunction = alloc::boxed::Box<dyn iceb
 pub mod iceberg::util
 pub mod iceberg::util::location
 pub mod iceberg::util::snapshot
-pub fn iceberg::util::snapshot::ancestors_between(table_metadata: &iceberg::spec::TableMetadataRef, latest_snapshot_id: i64, oldest_snapshot_id: core::option::Option<i64>) -> impl core::iter::traits::iterator::Iterator<Item = iceberg::spec::SnapshotRef> + core::marker::Send
-pub fn iceberg::util::snapshot::ancestors_of(table_metadata: &iceberg::spec::TableMetadataRef, snapshot_id: i64) -> impl core::iter::traits::iterator::Iterator<Item = iceberg::spec::SnapshotRef> + core::marker::Send
-pub fn iceberg::util::snapshot::snapshot_id_as_of_time(table_metadata: &iceberg::spec::TableMetadataRef, timestamp_ms: i64) -> iceberg::Result<i64>
+pub fn iceberg::util::snapshot::ancestors_between(table_metadata: &iceberg::spec::TableMetadataRef, latest_snapshot_id: iceberg::spec::SnapshotId, oldest_snapshot_id: core::option::Option<iceberg::spec::SnapshotId>) -> impl core::iter::traits::iterator::Iterator<Item = iceberg::spec::SnapshotRef> + core::marker::Send
+pub fn iceberg::util::snapshot::ancestors_of(table_metadata: &iceberg::spec::TableMetadataRef, snapshot_id: iceberg::spec::SnapshotId) -> impl core::iter::traits::iterator::Iterator<Item = iceberg::spec::SnapshotRef> + core::marker::Send
+pub fn iceberg::util::snapshot::snapshot_id_as_of_time(table_metadata: &iceberg::spec::TableMetadataRef, timestamp_ms: i64) -> iceberg::Result<iceberg::spec::SnapshotId>
 pub mod iceberg::writer
 pub mod iceberg::writer::base_writer
 pub mod iceberg::writer::base_writer::data_file_writer
@@ -3784,7 +3785,7 @@ pub iceberg::TableRequirement::LastAssignedPartitionIdMatch::last_assigned_parti
 pub iceberg::TableRequirement::NotExist
 pub iceberg::TableRequirement::RefSnapshotIdMatch
 pub iceberg::TableRequirement::RefSnapshotIdMatch::ref: alloc::string::String
-pub iceberg::TableRequirement::RefSnapshotIdMatch::snapshot_id: core::option::Option<i64>
+pub iceberg::TableRequirement::RefSnapshotIdMatch::snapshot_id: core::option::Option<iceberg::spec::SnapshotId>
 pub iceberg::TableRequirement::UuidMatch
 pub iceberg::TableRequirement::UuidMatch::uuid: uuid::Uuid
 impl iceberg::TableRequirement
@@ -3818,7 +3819,7 @@ pub iceberg::TableUpdate::RemoveEncryptionKey::key_id: alloc::string::String
 pub iceberg::TableUpdate::RemovePartitionSpecs
 pub iceberg::TableUpdate::RemovePartitionSpecs::spec_ids: alloc::vec::Vec<i32>
 pub iceberg::TableUpdate::RemovePartitionStatistics
-pub iceberg::TableUpdate::RemovePartitionStatistics::snapshot_id: i64
+pub iceberg::TableUpdate::RemovePartitionStatistics::snapshot_id: iceberg::spec::SnapshotId
 pub iceberg::TableUpdate::RemoveProperties
 pub iceberg::TableUpdate::RemoveProperties::removals: alloc::vec::Vec<alloc::string::String>
 pub iceberg::TableUpdate::RemoveSchemas
@@ -3826,9 +3827,9 @@ pub iceberg::TableUpdate::RemoveSchemas::schema_ids: alloc::vec::Vec<i32>
 pub iceberg::TableUpdate::RemoveSnapshotRef
 pub iceberg::TableUpdate::RemoveSnapshotRef::ref_name: alloc::string::String
 pub iceberg::TableUpdate::RemoveSnapshots
-pub iceberg::TableUpdate::RemoveSnapshots::snapshot_ids: alloc::vec::Vec<i64>
+pub iceberg::TableUpdate::RemoveSnapshots::snapshot_ids: alloc::vec::Vec<iceberg::spec::SnapshotId>
 pub iceberg::TableUpdate::RemoveStatistics
-pub iceberg::TableUpdate::RemoveStatistics::snapshot_id: i64
+pub iceberg::TableUpdate::RemoveStatistics::snapshot_id: iceberg::spec::SnapshotId
 pub iceberg::TableUpdate::SetCurrentSchema
 pub iceberg::TableUpdate::SetCurrentSchema::schema_id: i32
 pub iceberg::TableUpdate::SetDefaultSortOrder

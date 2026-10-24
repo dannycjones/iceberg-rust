@@ -19,7 +19,7 @@ use std::collections::HashMap;
 
 use typed_builder::TypedBuilder;
 
-use crate::spec::FieldId;
+use crate::spec::{FieldId, SnapshotId};
 
 /// A serialized form of a "compact" Theta sketch produced by the Apache DataSketches library.
 pub const APACHE_DATASKETCHES_THETA_V1: &str = "apache-datasketches-theta-v1";
@@ -31,7 +31,7 @@ pub const DELETION_VECTOR_V1: &str = "deletion-vector-v1";
 pub struct Blob {
     pub(crate) r#type: String,
     pub(crate) fields: Vec<FieldId>,
-    pub(crate) snapshot_id: i64,
+    pub(crate) snapshot_id: SnapshotId,
     pub(crate) sequence_number: i64,
     pub(crate) data: Vec<u8>,
     pub(crate) properties: HashMap<String, String>,
@@ -52,7 +52,7 @@ impl Blob {
 
     #[inline]
     /// ID of the Iceberg table's snapshot the blob was computed from
-    pub fn snapshot_id(&self) -> i64 {
+    pub fn snapshot_id(&self) -> SnapshotId {
         self.snapshot_id
     }
 

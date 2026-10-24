@@ -19,7 +19,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::spec::StatisticsFile;
+use crate::spec::{SnapshotId, StatisticsFile};
 use crate::table::Table;
 use crate::transaction::{ActionCommit, StatelessAction};
 use crate::{Result, TableUpdate};
@@ -27,7 +27,7 @@ use crate::{Result, TableUpdate};
 /// A transactional action for updating statistics files in a table
 #[derive(Clone)]
 pub struct UpdateStatisticsAction {
-    statistics_to_set: HashMap<i64, Option<StatisticsFile>>,
+    statistics_to_set: HashMap<SnapshotId, Option<StatisticsFile>>,
 }
 
 impl UpdateStatisticsAction {
@@ -62,7 +62,7 @@ impl UpdateStatisticsAction {
     /// # Returns
     ///
     /// An updated [`UpdateStatisticsAction`] with the removal operation recorded.
-    pub fn remove_statistics(mut self, snapshot_id: i64) -> Self {
+    pub fn remove_statistics(mut self, snapshot_id: SnapshotId) -> Self {
         self.statistics_to_set.insert(snapshot_id, None);
         self
     }

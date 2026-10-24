@@ -22,6 +22,7 @@ use serde_derive::{Deserialize, Serialize};
 use super::ByteBuf;
 use crate::Error;
 use crate::error::{Result, invalid_data};
+use crate::spec::SnapshotId;
 
 /// Entry in a manifest list.
 #[derive(Debug, PartialEq, Clone, Eq, Hash)]
@@ -57,7 +58,7 @@ pub struct ManifestFile {
     /// field: 503
     ///
     /// ID of the snapshot where the manifest file was added
-    pub added_snapshot_id: i64,
+    pub added_snapshot_id: SnapshotId,
     /// field: 504
     ///
     /// Number of entries in the manifest that have status ADDED, when null

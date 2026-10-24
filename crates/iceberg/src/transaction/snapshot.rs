@@ -27,7 +27,7 @@ use crate::error::{Result, invalid_data};
 use crate::spec::{
     DataFile, DataFileFormat, FormatVersion, MAIN_BRANCH, ManifestContentType, ManifestEntry,
     ManifestFile, ManifestListWriter, ManifestWriter, ManifestWriterBuilder, Operation,
-    PartitionSpecRef, SchemaRef, Snapshot, SnapshotReference, SnapshotRetention,
+    PartitionSpecRef, SchemaRef, Snapshot, SnapshotId, SnapshotReference, SnapshotRetention,
     SnapshotSummaryCollector, Struct, StructType, Summary, TableProperties, set_iceberg_version,
     update_snapshot_summaries,
 };
@@ -116,7 +116,7 @@ pub(crate) trait ManifestProcess: Send + Sync {
 
 pub(crate) struct SnapshotProducer<'a> {
     pub(crate) table: &'a Table,
-    snapshot_id: i64,
+    snapshot_id: SnapshotId,
     commit_uuid: Uuid,
     snapshot_properties: HashMap<String, String>,
     added_data_files: Vec<DataFile>,
@@ -216,8 +216,8 @@ impl<'a> SnapshotProducer<'a> {
         Ok(())
     }
 
-    fn generate_unique_snapshot_id(table: &Table) -> i64 {
-        let generate_random_id = || -> i64 {
+    fn generate_unique_snapshot_id(table: &Table) -> SnapshotId {
+        let generate_random_id = || -> SnapshotId {
             let (lhs, rhs) = Uuid::new_v4().as_u64_pair();
             let snapshot_id = (lhs ^ rhs) as i64;
             if snapshot_id < 0 {

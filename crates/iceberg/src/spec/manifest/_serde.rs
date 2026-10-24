@@ -31,13 +31,13 @@ use serde_with::serde_as;
 
 use super::{Datum, ManifestEntry, Schema, Struct};
 use crate::error::invalid_data;
-use crate::spec::{FieldId, FormatVersion, Literal, RawLiteral, Type};
+use crate::spec::{FieldId, FormatVersion, Literal, RawLiteral, SnapshotId, Type};
 use crate::{Error, metadata_columns};
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct ManifestEntryV2 {
     status: i32,
-    snapshot_id: Option<i64>,
+    snapshot_id: Option<SnapshotId>,
     sequence_number: Option<i64>,
     file_sequence_number: Option<i64>,
     data_file: DataFileSerde,
@@ -78,7 +78,7 @@ pub(super) struct ManifestEntryV1 {
     status: i32,
     // Required in v1 by the spec. Java declares it optional and writes null when
     // snapshot ID inheritance is enabled, which #3371 tracks.
-    pub snapshot_id: i64,
+    pub snapshot_id: SnapshotId,
     data_file: DataFileSerde,
 }
 

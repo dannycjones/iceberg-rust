@@ -45,7 +45,7 @@ use crate::metadata_columns::{
 };
 use crate::runtime::Runtime;
 use crate::spec::{
-    DataContentType, FieldId, Schema, SchemaRef, SnapshotRef, SortOrderRef, StructType,
+    DataContentType, FieldId, Schema, SchemaRef, SnapshotId, SnapshotRef, SortOrderRef, StructType,
 };
 use crate::table::Table;
 use crate::util::available_parallelism;
@@ -135,7 +135,7 @@ fn projected_partition_type(
 
 /// Selects a snapshot by ID or timestamp.
 enum SnapshotSelection {
-    SnapshotId(i64),
+    SnapshotId(SnapshotId),
     AsOfTime(i64),
 }
 
@@ -226,7 +226,7 @@ impl<'a> TableScanBuilder<'a> {
     /// The last call to this or [`Self::as_of_time`] takes precedence.
     /// If neither is set, the scan reads the current snapshot with the table's
     /// current schema.
-    pub fn snapshot_id(mut self, snapshot_id: i64) -> Self {
+    pub fn snapshot_id(mut self, snapshot_id: SnapshotId) -> Self {
         self.snapshot_selection = Some(SnapshotSelection::SnapshotId(snapshot_id));
         self
     }

@@ -26,7 +26,8 @@ use crate::avro::schema_to_avro_schema;
 use crate::error::{Result, invalid_data};
 use crate::spec::{
     DataContentType, DataFile, INITIAL_SEQUENCE_NUMBER, ListType, Literal, ManifestFile, MapType,
-    NestedField, NestedFieldRef, PrimitiveLiteral, PrimitiveType, Schema, StructType, Type,
+    NestedField, NestedFieldRef, PrimitiveLiteral, PrimitiveType, Schema, SnapshotId, StructType,
+    Type,
 };
 
 /// Reference to [`ManifestEntry`].
@@ -46,7 +47,7 @@ pub struct ManifestEntry {
     /// Snapshot id where the file was added, or deleted if status is 2.
     /// Inherited when null.
     #[builder(default, setter(strip_option(fallback = snapshot_id_opt)))]
-    pub snapshot_id: Option<i64>,
+    pub snapshot_id: Option<SnapshotId>,
     /// field id: 3
     ///
     /// Data sequence number of the file.
@@ -126,7 +127,7 @@ impl ManifestEntry {
 
     /// Snapshot id
     #[inline]
-    pub fn snapshot_id(&self) -> Option<i64> {
+    pub fn snapshot_id(&self) -> Option<SnapshotId> {
         self.snapshot_id
     }
 

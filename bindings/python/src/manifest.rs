@@ -18,7 +18,7 @@
 use std::sync::Arc;
 
 use iceberg::spec::{
-    FieldSummary, FormatVersion, Manifest, ManifestEntry, ManifestFile, ManifestList,
+    FieldSummary, FormatVersion, Manifest, ManifestEntry, ManifestFile, ManifestList, SnapshotId,
 };
 use pyo3::prelude::*;
 
@@ -111,7 +111,7 @@ impl PyManifestFile {
     }
 
     #[getter]
-    fn added_snapshot_id(&self) -> i64 {
+    fn added_snapshot_id(&self) -> SnapshotId {
         self.inner.added_snapshot_id
     }
 
@@ -174,7 +174,7 @@ impl PyManifestEntry {
     }
 
     #[getter]
-    fn snapshot_id(&self) -> Option<i64> {
+    fn snapshot_id(&self) -> Option<SnapshotId> {
         self.inner.snapshot_id
     }
 

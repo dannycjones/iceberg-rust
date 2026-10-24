@@ -25,7 +25,7 @@ use serde_derive::{Deserialize, Serialize};
 use super::ManifestFile;
 use crate::Error;
 use crate::error::{Result, invalid_data};
-use crate::spec::FieldSummary;
+use crate::spec::{FieldSummary, SnapshotId};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(transparent)]
@@ -131,7 +131,7 @@ pub(super) struct ManifestFileV1 {
     pub manifest_path: String,
     pub manifest_length: i64,
     pub partition_spec_id: i32,
-    pub added_snapshot_id: i64,
+    pub added_snapshot_id: SnapshotId,
     pub added_data_files_count: Option<i32>,
     pub existing_data_files_count: Option<i32>,
     pub deleted_data_files_count: Option<i32>,
@@ -156,7 +156,7 @@ pub(super) struct ManifestFileV2 {
     pub sequence_number: i64,
     #[serde(default = "v2_default_min_sequence_number_for_v1")]
     pub min_sequence_number: i64,
-    pub added_snapshot_id: i64,
+    pub added_snapshot_id: SnapshotId,
     #[serde(alias = "added_data_files_count", alias = "added_files_count")]
     pub added_files_count: i32,
     #[serde(alias = "existing_data_files_count", alias = "existing_files_count")]
@@ -181,7 +181,7 @@ pub(super) struct ManifestFileV3 {
     pub sequence_number: i64,
     #[serde(default = "v2_default_min_sequence_number_for_v1")]
     pub min_sequence_number: i64,
-    pub added_snapshot_id: i64,
+    pub added_snapshot_id: SnapshotId,
     #[serde(alias = "added_data_files_count", alias = "added_files_count")]
     pub added_files_count: i32,
     #[serde(alias = "existing_data_files_count", alias = "existing_files_count")]

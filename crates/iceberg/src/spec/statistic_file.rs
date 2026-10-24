@@ -21,14 +21,14 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::spec::FieldId;
+use crate::spec::{FieldId, SnapshotId};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 /// Represents a statistics file
 pub struct StatisticsFile {
     /// The snapshot id of the statistics file.
-    pub snapshot_id: i64,
+    pub snapshot_id: SnapshotId,
     /// Path of the statistics file
     pub statistics_path: String,
     /// File size in bytes
@@ -49,7 +49,7 @@ pub struct BlobMetadata {
     /// Type of the blob.
     pub r#type: String,
     /// Snapshot id of the blob.
-    pub snapshot_id: i64,
+    pub snapshot_id: SnapshotId,
     /// Sequence number of the blob.
     pub sequence_number: i64,
     /// Fields of the blob.
@@ -64,7 +64,7 @@ pub struct BlobMetadata {
 /// Statistics file for a partition
 pub struct PartitionStatisticsFile {
     /// The snapshot id of the statistics file.
-    pub snapshot_id: i64,
+    pub snapshot_id: SnapshotId,
     /// Path of the statistics file
     pub statistics_path: String,
     /// File size in bytes

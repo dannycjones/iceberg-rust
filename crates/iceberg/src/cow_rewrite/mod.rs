@@ -82,7 +82,7 @@ pub use rewriter::{CowBatchRewrite, CowBatchRewriter};
 
 use crate::expr::Predicate;
 use crate::scan::FileScanTaskStream;
-use crate::spec::{DataFile, PartitionKey};
+use crate::spec::{DataFile, PartitionKey, SnapshotId};
 use crate::table::Table;
 use crate::{Error, ErrorKind, Result};
 
@@ -138,7 +138,7 @@ impl CowRewriteResult {
 pub struct CowRewriteBuilder<'a> {
     table: &'a Table,
     predicate: Predicate,
-    snapshot_id: Option<i64>,
+    snapshot_id: Option<SnapshotId>,
     batch_size: Option<usize>,
     case_sensitive: bool,
     rewriter: Option<Arc<dyn CowBatchRewriter>>,
@@ -164,7 +164,7 @@ impl<'a> CowRewriteBuilder<'a> {
     }
 
     /// Sets the snapshot id used to plan candidate files.
-    pub fn with_snapshot_id(mut self, snapshot_id: i64) -> Self {
+    pub fn with_snapshot_id(mut self, snapshot_id: SnapshotId) -> Self {
         self.snapshot_id = Some(snapshot_id);
         self
     }

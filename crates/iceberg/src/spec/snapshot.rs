@@ -33,6 +33,10 @@ pub const MAIN_BRANCH: &str = "main";
 
 /// Reference to [`Snapshot`].
 pub type SnapshotRef = Arc<Snapshot>;
+
+/// Type alias for snapshot id.
+pub type SnapshotId = i64;
+
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "lowercase")]
 /// The operation field is used by some operations, like snapshot expiration, to skip processing certain snapshots.
@@ -85,11 +89,11 @@ pub struct SnapshotRowRange {
 /// A snapshot represents the state of a table at some time and is used to access the complete set of data files in the table.
 pub struct Snapshot {
     /// A unique long ID
-    pub(crate) snapshot_id: i64,
+    pub(crate) snapshot_id: SnapshotId,
     /// The snapshot ID of the snapshot’s parent.
     /// Omitted for any snapshot with no parent
     #[builder(default = None)]
-    pub(crate) parent_snapshot_id: Option<i64>,
+    pub(crate) parent_snapshot_id: Option<SnapshotId>,
     /// A monotonically increasing long that tracks the order of
     /// changes to a table.
     pub(crate) sequence_number: i64,
@@ -122,13 +126,13 @@ pub struct Snapshot {
 impl Snapshot {
     /// Get the id of the snapshot
     #[inline]
-    pub fn snapshot_id(&self) -> i64 {
+    pub fn snapshot_id(&self) -> SnapshotId {
         self.snapshot_id
     }
 
     /// Get parent snapshot id.
     #[inline]
-    pub fn parent_snapshot_id(&self) -> Option<i64> {
+    pub fn parent_snapshot_id(&self) -> Option<SnapshotId> {
         self.parent_snapshot_id
     }
 
@@ -230,16 +234,16 @@ pub(super) mod _serde {
     use super::{Operation, Snapshot, Summary};
     use crate::Error;
     use crate::error::invalid_data;
-    use crate::spec::SchemaId;
     use crate::spec::snapshot::SnapshotRowRange;
+    use crate::spec::{SchemaId, SnapshotId};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
     #[serde(rename_all = "kebab-case")]
     /// Defines the structure of a v3 snapshot for serialization/deserialization
     pub(crate) struct SnapshotV3 {
-        pub snapshot_id: i64,
+        pub snapshot_id: SnapshotId,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub parent_snapshot_id: Option<i64>,
+        pub parent_snapshot_id: Option<SnapshotId>,
         pub sequence_number: i64,
         pub timestamp_ms: i64,
         pub manifest_list: String,
@@ -258,9 +262,9 @@ pub(super) mod _serde {
     #[serde(rename_all = "kebab-case")]
     /// Defines the structure of a v2 snapshot for serialization/deserialization
     pub(crate) struct SnapshotV2 {
-        pub snapshot_id: i64,
+        pub snapshot_id: SnapshotId,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub parent_snapshot_id: Option<i64>,
+        pub parent_snapshot_id: Option<SnapshotId>,
         #[serde(default)]
         pub sequence_number: i64,
         pub timestamp_ms: i64,
@@ -274,9 +278,9 @@ pub(super) mod _serde {
     #[serde(rename_all = "kebab-case")]
     /// Defines the structure of a v1 snapshot for serialization/deserialization
     pub(crate) struct SnapshotV1 {
-        pub snapshot_id: i64,
+        pub snapshot_id: SnapshotId,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub parent_snapshot_id: Option<i64>,
+        pub parent_snapshot_id: Option<SnapshotId>,
         pub timestamp_ms: i64,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub manifest_list: Option<String>,
@@ -417,7 +421,7 @@ pub(super) mod _serde {
 /// Iceberg tables keep track of branches and tags using snapshot references.
 pub struct SnapshotReference {
     /// A reference’s snapshot ID. The tagged snapshot or latest snapshot of a branch.
-    pub snapshot_id: i64,
+    pub snapshot_id: SnapshotId,
     #[serde(flatten)]
     /// Snapshot retention policy
     pub retention: SnapshotRetention,
@@ -432,7 +436,7 @@ impl SnapshotReference {
 
 impl SnapshotReference {
     /// Create new snapshot reference
-    pub fn new(snapshot_id: i64, retention: SnapshotRetention) -> Self {
+    pub fn new(snapshot_id: SnapshotId, retention: SnapshotRetention) -> Self {
         SnapshotReference {
             snapshot_id,
             retention,

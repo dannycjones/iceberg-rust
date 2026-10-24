@@ -27,6 +27,7 @@ use super::_serde::{ManifestFileV1, ManifestFileV2, ManifestFileV3};
 use super::{FormatVersion, ManifestContentType, ManifestFile, UNASSIGNED_SEQUENCE_NUMBER};
 use crate::error::{Result, invalid_data};
 use crate::io::{FileMetadata, FileWrite};
+use crate::spec::SnapshotId;
 use crate::{Error, ErrorKind};
 
 /// A manifest list writer.
@@ -35,7 +36,7 @@ pub struct ManifestListWriter {
     writer: Box<dyn FileWrite>,
     avro_writer: Writer<'static, Vec<u8>>,
     sequence_number: i64,
-    snapshot_id: i64,
+    snapshot_id: SnapshotId,
     next_row_id: Option<u64>,
 }
 
@@ -57,8 +58,8 @@ impl ManifestListWriter {
     /// Construct a v1 [`ManifestListWriter`] that writes to a provided [`FileWrite`].
     pub fn v1(
         writer: Box<dyn FileWrite>,
-        snapshot_id: i64,
-        parent_snapshot_id: Option<i64>,
+        snapshot_id: SnapshotId,
+        parent_snapshot_id: Option<SnapshotId>,
     ) -> Self {
         let mut metadata = HashMap::from_iter([
             ("snapshot-id".to_string(), snapshot_id.to_string()),
@@ -76,8 +77,8 @@ impl ManifestListWriter {
     /// Construct a v2 [`ManifestListWriter`] that writes to a provided [`FileWrite`].
     pub fn v2(
         writer: Box<dyn FileWrite>,
-        snapshot_id: i64,
-        parent_snapshot_id: Option<i64>,
+        snapshot_id: SnapshotId,
+        parent_snapshot_id: Option<SnapshotId>,
         sequence_number: i64,
     ) -> Self {
         let mut metadata = HashMap::from_iter([
@@ -104,8 +105,8 @@ impl ManifestListWriter {
     /// Construct a v3 [`ManifestListWriter`] that writes to a provided [`FileWrite`].
     pub fn v3(
         writer: Box<dyn FileWrite>,
-        snapshot_id: i64,
-        parent_snapshot_id: Option<i64>,
+        snapshot_id: SnapshotId,
+        parent_snapshot_id: Option<SnapshotId>,
         sequence_number: i64,
         first_row_id: Option<u64>, // Always None for delete manifests
     ) -> Self {
@@ -141,7 +142,7 @@ impl ManifestListWriter {
         writer: Box<dyn FileWrite>,
         metadata: HashMap<String, String>,
         sequence_number: i64,
-        snapshot_id: i64,
+        snapshot_id: SnapshotId,
         first_row_id: Option<u64>,
     ) -> Self {
         let avro_schema = match format_version {

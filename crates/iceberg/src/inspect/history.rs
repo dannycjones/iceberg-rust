@@ -38,7 +38,7 @@ use futures::{StreamExt, stream};
 use crate::Result;
 use crate::arrow::{UTC_TIME_ZONE, schema_to_arrow_schema};
 use crate::scan::ArrowRecordBatchStream;
-use crate::spec::{NestedField, PrimitiveType, Type};
+use crate::spec::{NestedField, PrimitiveType, SnapshotId, Type};
 use crate::table::Table;
 use crate::util::snapshot::ancestors_of;
 
@@ -82,7 +82,7 @@ impl<'a> HistoryTable<'a> {
 
         // Walk the current snapshot's parent chain once: membership in this set
         // is what tells the live lineage apart from rolled-back history entries.
-        let ancestors: HashSet<i64> = metadata
+        let ancestors: HashSet<SnapshotId> = metadata
             .current_snapshot_id()
             .map(|id| {
                 ancestors_of(&self.table.metadata_ref(), id)

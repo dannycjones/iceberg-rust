@@ -24,7 +24,7 @@ use crate::Result;
 use crate::compression::CompressionCodec;
 use crate::error::invalid_data;
 use crate::io::FileRead;
-use crate::spec::FieldId;
+use crate::spec::{FieldId, SnapshotId};
 
 /// Human-readable identification of the application writing the file, along with its version.
 /// Example: "Trino version 381"
@@ -37,7 +37,7 @@ pub const CREATED_BY_PROPERTY: &str = "created-by";
 pub struct BlobMetadata {
     pub(crate) r#type: String,
     pub(crate) fields: Vec<FieldId>,
-    pub(crate) snapshot_id: i64,
+    pub(crate) snapshot_id: SnapshotId,
     pub(crate) sequence_number: i64,
     pub(crate) offset: u64,
     pub(crate) length: u64,
@@ -64,7 +64,7 @@ impl BlobMetadata {
 
     #[inline]
     /// ID of the Iceberg table's snapshot the blob was computed from
-    pub fn snapshot_id(&self) -> i64 {
+    pub fn snapshot_id(&self) -> SnapshotId {
         self.snapshot_id
     }
 

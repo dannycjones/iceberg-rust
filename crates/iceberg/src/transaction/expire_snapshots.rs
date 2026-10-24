@@ -22,7 +22,7 @@ use chrono::Utc;
 
 use crate::error::invalid_data;
 use crate::spec::{
-    MAIN_BRANCH, SnapshotReference, SnapshotRetention, TableMetadata, TableProperties,
+    MAIN_BRANCH, SnapshotId, SnapshotReference, SnapshotRetention, TableMetadata, TableProperties,
 };
 use crate::table::Table;
 use crate::transaction::action::{ActionCommit, StatelessAction};
@@ -53,7 +53,7 @@ use crate::{Error, Result, TableRequirement, TableUpdate};
 ///   drop the ref silently.
 #[derive(Clone)]
 pub struct ExpireSnapshotsAction {
-    explicit_ids_to_remove: Vec<i64>,
+    explicit_ids_to_remove: Vec<SnapshotId>,
     older_than_ms: Option<i64>,
     retain_last: Option<usize>,
 }
@@ -76,7 +76,10 @@ impl ExpireSnapshotsAction {
     ///
     /// Ids accumulate across calls (like [`add_data_files`](crate::transaction::Transaction::fast_append)).
     /// An id that is still referenced by a branch or tag cannot be expired and causes commits to fail.
-    pub fn expire_snapshot_ids(mut self, snapshot_ids: impl IntoIterator<Item = i64>) -> Self {
+    pub fn expire_snapshot_ids(
+        mut self,
+        snapshot_ids: impl IntoIterator<Item = SnapshotId>,
+    ) -> Self {
         self.explicit_ids_to_remove.extend(snapshot_ids);
         self
     }
@@ -138,13 +141,15 @@ impl ExpireSnapshotsAction {
 
         // Heads of retained refs (plus the current snapshot) are never expired; naming one
         // explicitly is an error, since `remove_snapshots` would otherwise drop the ref silently.
-        let mut ref_head_ids: HashSet<i64> = retained_refs.iter().map(|r| r.snapshot_id).collect();
+        let mut ref_head_ids: HashSet<SnapshotId> =
+            retained_refs.iter().map(|r| r.snapshot_id).collect();
         if let Some(current_id) = metadata.current_snapshot_id() {
             ref_head_ids.insert(current_id);
         }
 
-        let existing_ids: HashSet<i64> = metadata.snapshots().map(|s| s.snapshot_id()).collect();
-        let mut expiring_ids: HashSet<i64> = HashSet::new();
+        let existing_ids: HashSet<SnapshotId> =
+            metadata.snapshots().map(|s| s.snapshot_id()).collect();
+        let mut expiring_ids: HashSet<SnapshotId> = HashSet::new();
         for id in &self.explicit_ids_to_remove {
             if ref_head_ids.contains(id) {
                 return Err(Self::reference_error(metadata, *id));
@@ -210,7 +215,7 @@ impl ExpireSnapshotsAction {
             }
         }
 
-        let mut ids_to_remove: Vec<i64> = expiring_ids.into_iter().collect();
+        let mut ids_to_remove: Vec<SnapshotId> = expiring_ids.into_iter().collect();
         ids_to_remove.sort_unstable();
         removed_ref_names.sort();
         Ok(ExpirePlan {
@@ -244,11 +249,11 @@ impl ExpireSnapshotsAction {
     /// referenced. Ancestry timestamps decrease monotonically, so this needs no early break.
     fn retain_branch(
         metadata: &TableMetadata,
-        head_id: i64,
+        head_id: SnapshotId,
         min_to_keep: usize,
         cutoff: i64,
-        retained_ids: &mut HashSet<i64>,
-        referenced_ids: &mut HashSet<i64>,
+        retained_ids: &mut HashSet<SnapshotId>,
+        referenced_ids: &mut HashSet<SnapshotId>,
     ) {
         let mut kept_count = 0usize;
         for ancestor_id in Self::ancestors(metadata, head_id) {
@@ -264,7 +269,10 @@ impl ExpireSnapshotsAction {
     }
 
     /// Iterates a snapshot and its ancestors, newest first, following `parent_snapshot_id`.
-    fn ancestors(metadata: &TableMetadata, head_id: i64) -> impl Iterator<Item = i64> + '_ {
+    fn ancestors(
+        metadata: &TableMetadata,
+        head_id: SnapshotId,
+    ) -> impl Iterator<Item = SnapshotId> + '_ {
         let mut next_id = Some(head_id);
         std::iter::from_fn(move || {
             let id = next_id?;
@@ -275,7 +283,7 @@ impl ExpireSnapshotsAction {
         })
     }
 
-    fn reference_error(metadata: &TableMetadata, snapshot_id: i64) -> Error {
+    fn reference_error(metadata: &TableMetadata, snapshot_id: SnapshotId) -> Error {
         if metadata.current_snapshot_id() == Some(snapshot_id) {
             return invalid_data!("Cannot expire the current snapshot");
         }
@@ -291,7 +299,7 @@ impl ExpireSnapshotsAction {
 
 /// Snapshots and refs an [`ExpireSnapshotsAction`] resolves to remove.
 struct ExpirePlan {
-    ids_to_remove: Vec<i64>,
+    ids_to_remove: Vec<SnapshotId>,
     refs_to_remove: Vec<String>,
 }
 
@@ -368,7 +376,7 @@ mod tests {
     use chrono::Utc;
 
     use crate::spec::{
-        MAIN_BRANCH, Operation, PartitionStatisticsFile, Snapshot, SnapshotReference,
+        MAIN_BRANCH, Operation, PartitionStatisticsFile, Snapshot, SnapshotId, SnapshotReference,
         SnapshotRetention, StatisticsFile, Summary,
     };
     use crate::table::Table;
@@ -381,8 +389,8 @@ mod tests {
 
     // `make_v2_table` carries an older snapshot (ts 1515100955770) and a current
     // snapshot (ts 1555100955770).
-    const OLD_SNAPSHOT: i64 = 3051729675574597004;
-    const CURRENT_SNAPSHOT: i64 = 3055729675574597004;
+    const OLD_SNAPSHOT: SnapshotId = 3051729675574597004;
+    const CURRENT_SNAPSHOT: SnapshotId = 3055729675574597004;
     // Well after the minimal table's last-updated-ms, so synthetic snapshots pass timestamp checks.
     const TS: i64 = 1_700_000_000_000;
     // A cutoff at the epoch makes age-based expiry a no-op (every snapshot is newer), isolating the
@@ -393,7 +401,7 @@ mod tests {
         ExpireSnapshotsAction::new()
     }
 
-    async fn removed_ids(action: ExpireSnapshotsAction) -> Vec<i64> {
+    async fn removed_ids(action: ExpireSnapshotsAction) -> Vec<SnapshotId> {
         expired(&make_v2_table(), action).await
     }
 
@@ -404,7 +412,7 @@ mod tests {
             .take_updates()
     }
 
-    async fn expired(table: &Table, action: ExpireSnapshotsAction) -> Vec<i64> {
+    async fn expired(table: &Table, action: ExpireSnapshotsAction) -> Vec<SnapshotId> {
         updates_of(table, action)
             .await
             .into_iter()
@@ -442,12 +450,12 @@ mod tests {
             .build()
     }
 
-    fn branch(snapshot_id: i64, min_snapshots_to_keep: Option<i32>) -> SnapshotReference {
+    fn branch(snapshot_id: SnapshotId, min_snapshots_to_keep: Option<i32>) -> SnapshotReference {
         branch_with(snapshot_id, min_snapshots_to_keep, None, None)
     }
 
     fn branch_with(
-        snapshot_id: i64,
+        snapshot_id: SnapshotId,
         min_snapshots_to_keep: Option<i32>,
         max_snapshot_age_ms: Option<i64>,
         max_ref_age_ms: Option<i64>,
@@ -462,7 +470,7 @@ mod tests {
         }
     }
 
-    fn tag(snapshot_id: i64, max_ref_age_ms: Option<i64>) -> SnapshotReference {
+    fn tag(snapshot_id: SnapshotId, max_ref_age_ms: Option<i64>) -> SnapshotReference {
         SnapshotReference {
             snapshot_id,
             retention: SnapshotRetention::Tag { max_ref_age_ms },
@@ -515,7 +523,7 @@ mod tests {
         table.with_metadata(Arc::new(builder.build().unwrap().metadata))
     }
 
-    fn stats_file(snapshot_id: i64) -> StatisticsFile {
+    fn stats_file(snapshot_id: SnapshotId) -> StatisticsFile {
         StatisticsFile {
             snapshot_id,
             statistics_path: format!("/stats-{snapshot_id}.puffin"),
@@ -526,7 +534,7 @@ mod tests {
         }
     }
 
-    fn partition_stats_file(snapshot_id: i64) -> PartitionStatisticsFile {
+    fn partition_stats_file(snapshot_id: SnapshotId) -> PartitionStatisticsFile {
         PartitionStatisticsFile {
             snapshot_id,
             statistics_path: format!("/partition-stats-{snapshot_id}.puffin"),
@@ -534,7 +542,7 @@ mod tests {
         }
     }
 
-    fn removed_statistics(updates: &[TableUpdate]) -> Vec<i64> {
+    fn removed_statistics(updates: &[TableUpdate]) -> Vec<SnapshotId> {
         updates
             .iter()
             .filter_map(|update| match update {
@@ -544,7 +552,7 @@ mod tests {
             .collect()
     }
 
-    fn removed_partition_statistics(updates: &[TableUpdate]) -> Vec<i64> {
+    fn removed_partition_statistics(updates: &[TableUpdate]) -> Vec<SnapshotId> {
         updates
             .iter()
             .filter_map(|update| match update {
@@ -835,7 +843,7 @@ mod tests {
         let updates = updates_of(&table, action()).await;
         // The tag is younger than its max-ref-age, so neither it nor its snapshot is removed.
         assert!(removed_refs(&updates).is_empty());
-        assert_eq!(expired(&table, action()).await, Vec::<i64>::new());
+        assert_eq!(expired(&table, action()).await, Vec::<SnapshotId>::new());
     }
 
     #[tokio::test]

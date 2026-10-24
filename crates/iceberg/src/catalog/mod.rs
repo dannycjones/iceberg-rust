@@ -47,7 +47,7 @@ use crate::io::StorageFactory;
 use crate::runtime::Runtime;
 use crate::spec::{
     EncryptedKey, FieldId, FormatVersion, PartitionFieldId, PartitionStatisticsFile, Schema,
-    SchemaId, Snapshot, SnapshotReference, SortOrder, StatisticsFile, TableMetadata,
+    SchemaId, Snapshot, SnapshotId, SnapshotReference, SortOrder, StatisticsFile, TableMetadata,
     TableMetadataBuilder, UnboundPartitionSpec, ViewFormatVersion, ViewRepresentations,
     ViewVersion,
 };
@@ -458,7 +458,7 @@ pub enum TableRequirement {
         /// The snapshot id of the table to assert.
         /// If the id is `None`, the ref must not already exist.
         #[serde(rename = "snapshot-id")]
-        snapshot_id: Option<i64>,
+        snapshot_id: Option<SnapshotId>,
     },
     /// The table's last assigned column id must match the requirement.
     #[serde(rename = "assert-last-assigned-field-id")]
@@ -573,7 +573,7 @@ pub enum TableUpdate {
     #[serde(rename_all = "kebab-case")]
     RemoveSnapshots {
         /// Snapshot ids to remove.
-        snapshot_ids: Vec<i64>,
+        snapshot_ids: Vec<SnapshotId>,
     },
     /// Remove snapshot reference
     #[serde(rename_all = "kebab-case")]
@@ -612,7 +612,7 @@ pub enum TableUpdate {
     #[serde(rename_all = "kebab-case")]
     RemoveStatistics {
         /// Snapshot id to remove statistics for.
-        snapshot_id: i64,
+        snapshot_id: SnapshotId,
     },
     /// Set partition statistics for a snapshot
     #[serde(rename_all = "kebab-case")]
@@ -624,7 +624,7 @@ pub enum TableUpdate {
     #[serde(rename_all = "kebab-case")]
     RemovePartitionStatistics {
         /// Snapshot id to remove partition statistics for.
-        snapshot_id: i64,
+        snapshot_id: SnapshotId,
     },
     /// Remove schemas
     #[serde(rename_all = "kebab-case")]
@@ -868,9 +868,9 @@ pub(super) mod _serde {
     /// Main difference to SnapshotV2 is that sequence-number is optional
     /// in the rest catalog spec to allow for backwards compatibility with v1.
     struct CatalogSnapshot {
-        snapshot_id: i64,
+        snapshot_id: SnapshotId,
         #[serde(skip_serializing_if = "Option::is_none")]
-        parent_snapshot_id: Option<i64>,
+        parent_snapshot_id: Option<SnapshotId>,
         #[serde(default)]
         sequence_number: i64,
         timestamp_ms: i64,
@@ -1048,7 +1048,7 @@ mod _serde_set_statistics {
     #[derive(Debug, Serialize, Deserialize)]
     #[serde(rename_all = "kebab-case")]
     struct SetStatistics {
-        snapshot_id: Option<i64>,
+        snapshot_id: Option<SnapshotId>,
         statistics: StatisticsFile,
     }
 

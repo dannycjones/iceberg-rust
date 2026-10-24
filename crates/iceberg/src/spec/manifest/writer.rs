@@ -33,12 +33,12 @@ use crate::spec::manifest::_serde::{ManifestEntryV1, ManifestEntryV2};
 use crate::spec::manifest::{manifest_schema_v1, manifest_schema_v2};
 use crate::spec::{
     DataContentType, DataFile, FieldSummary, ManifestEntry, ManifestFile, ManifestMetadata,
-    ManifestStatus, PrimitiveLiteral, SchemaRef, StructType, Type,
+    ManifestStatus, PrimitiveLiteral, SchemaRef, SnapshotId, StructType, Type,
 };
 
 /// Placeholder for snapshot ID. The field with this value must be replaced
 /// with the actual snapshot ID before it is committed.
-const UNASSIGNED_SNAPSHOT_ID: i64 = -1;
+const UNASSIGNED_SNAPSHOT_ID: SnapshotId = -1;
 
 /// Retains the output until close provides the size required by encrypted key metadata.
 pub(crate) enum ManifestOutput {
@@ -71,7 +71,7 @@ impl ManifestOutput {
 pub struct ManifestWriterBuilder {
     output: ManifestOutput,
     location: String,
-    snapshot_id: Option<i64>,
+    snapshot_id: Option<SnapshotId>,
     schema: SchemaRef,
     partition_spec: PartitionSpec,
 }
@@ -80,7 +80,7 @@ impl ManifestWriterBuilder {
     /// Create a new builder for unencrypted manifests.
     pub fn new(
         output: OutputFile,
-        snapshot_id: Option<i64>,
+        snapshot_id: Option<SnapshotId>,
         schema: SchemaRef,
         partition_spec: PartitionSpec,
     ) -> Self {
@@ -99,7 +99,7 @@ impl ManifestWriterBuilder {
     /// Use this when writing manifests with transparent encryption.
     pub fn new_from_encrypted(
         encrypted_output: EncryptedOutputFile,
-        snapshot_id: Option<i64>,
+        snapshot_id: Option<SnapshotId>,
         schema: SchemaRef,
         partition_spec: PartitionSpec,
     ) -> Result<Self> {
@@ -188,7 +188,7 @@ pub struct ManifestWriter {
     output: ManifestOutput,
     location: String,
 
-    snapshot_id: Option<i64>,
+    snapshot_id: Option<SnapshotId>,
 
     added_files: u32,
     added_rows: u64,
@@ -210,7 +210,7 @@ impl ManifestWriter {
     pub(crate) fn new(
         output: ManifestOutput,
         location: String,
-        snapshot_id: Option<i64>,
+        snapshot_id: Option<SnapshotId>,
         metadata: ManifestMetadata,
         first_row_id: Option<u64>,
     ) -> Self {
@@ -366,7 +366,7 @@ impl ManifestWriter {
     pub fn add_existing_file(
         &mut self,
         data_file: DataFile,
-        snapshot_id: i64,
+        snapshot_id: SnapshotId,
         sequence_number: i64,
         file_sequence_number: Option<i64>,
     ) -> Result<()> {
