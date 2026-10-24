@@ -31,7 +31,7 @@ use crate::Error;
 use crate::error::{Result, invalid_data};
 use crate::spec::{
     DEFAULT_PARTITION_SPEC_ID, FieldId, Literal, NestedFieldRef, PartitionSpecId, PrimitiveType,
-    Struct, StructType, Type,
+    SortOrderId, Struct, StructType, Type,
 };
 
 /// Data file carries data file path, partition tuple, metrics, …
@@ -154,7 +154,7 @@ pub struct DataFile {
     /// order id to null. Readers must ignore sort order id for position
     /// delete files.
     #[builder(default, setter(strip_option))]
-    pub(crate) sort_order_id: Option<i32>,
+    pub(crate) sort_order_id: Option<SortOrderId>,
     /// field id: 142
     ///
     /// The _row_id for the first row in the data file.
@@ -335,7 +335,7 @@ impl DataFile {
     /// sorted by file and position, not a table order, and should set sort
     /// order id to null. Readers must ignore sort order id for position
     /// delete files.
-    pub fn sort_order_id(&self) -> Option<i32> {
+    pub fn sort_order_id(&self) -> Option<SortOrderId> {
         self.sort_order_id
     }
     /// Get the fully qualified referenced location for the corresponding data file.

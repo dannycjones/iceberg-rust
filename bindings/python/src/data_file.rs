@@ -17,7 +17,7 @@
 
 use std::collections::HashMap;
 
-use iceberg::spec::{DataFile, DataFileFormat, FieldId, PrimitiveLiteral};
+use iceberg::spec::{DataFile, DataFileFormat, FieldId, PrimitiveLiteral, SortOrderId};
 use pyo3::IntoPyObjectExt;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -155,7 +155,7 @@ impl PyDataFile {
     }
 
     #[getter]
-    fn sort_order_id(&self) -> Option<i32> {
+    fn sort_order_id(&self) -> Option<SortOrderId> {
         self.inner.sort_order_id()
     }
 }

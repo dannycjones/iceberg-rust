@@ -25,7 +25,7 @@ use crate::error::invalid_data;
 use crate::expr::BoundPredicate;
 use crate::spec::{
     DataContentType, DataFileFormat, FieldId, ManifestEntryRef, NameMapping, PartitionSpec,
-    PartitionSpecId, Schema, SchemaRef, SortOrderRef, Struct, StructType,
+    PartitionSpecId, Schema, SchemaRef, SortOrderId, SortOrderRef, Struct, StructType,
 };
 use crate::{Error, Result};
 
@@ -126,7 +126,7 @@ pub struct FileScanTask {
     /// as physically sorted, which a consumer such as the DataFusion sorted-scan optimizer
     /// needs even when the order definition itself is unavailable.
     #[builder(default)]
-    sort_order_id: Option<i32>,
+    sort_order_id: Option<SortOrderId>,
 
     /// The sort order that this file's rows are sorted by, resolved from the data file's
     /// [`sort_order_id`](Self::sort_order_id) against the table's known sort orders. `Some`
@@ -249,7 +249,7 @@ impl FileScanTask {
     }
 
     /// Returns the raw sort order id recorded on the data file, unresolved.
-    pub fn sort_order_id(&self) -> Option<i32> {
+    pub fn sort_order_id(&self) -> Option<SortOrderId> {
         self.sort_order_id
     }
 
@@ -439,7 +439,7 @@ mod _serde {
     use crate::expr::BoundPredicate;
     use crate::spec::{
         DataContentType, DataFileFormat, FieldId, Literal, NameMapping, PartitionSpec,
-        PartitionSpecId, RawLiteral, SchemaRef, SortOrderRef, StructType, Type,
+        PartitionSpecId, RawLiteral, SchemaRef, SortOrderId, SortOrderRef, StructType, Type,
     };
     use crate::{Error, Result};
 
@@ -466,7 +466,7 @@ mod _serde {
         #[serde(default)]
         unified_partition_type: Option<Arc<StructType>>,
         #[serde(default)]
-        sort_order_id: Option<i32>,
+        sort_order_id: Option<SortOrderId>,
         #[serde(default)]
         sort_order: Option<SortOrderRef>,
         case_sensitive: bool,
@@ -501,7 +501,7 @@ mod _serde {
         #[serde(skip_serializing_if = "Option::is_none")]
         unified_partition_type: Option<&'a Arc<StructType>>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        sort_order_id: Option<i32>,
+        sort_order_id: Option<SortOrderId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         sort_order: Option<&'a SortOrderRef>,
         case_sensitive: bool,

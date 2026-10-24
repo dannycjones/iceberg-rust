@@ -44,8 +44,8 @@ use crate::metadata_columns::{
 use crate::spec::{
     DataContentType, DataFileBuilder, DataFileFormat, FormatVersion, Literal, ManifestEntry,
     ManifestListWriter, ManifestStatus, ManifestWriterBuilder, NestedField, PartitionSpec,
-    PrimitiveType, Schema, Struct, StructType, TableMetadata, TableMetadataBuilder, Transform,
-    Type, UnboundPartitionSpec,
+    PrimitiveType, Schema, SortOrderId, Struct, StructType, TableMetadata, TableMetadataBuilder,
+    Transform, Type, UnboundPartitionSpec,
 };
 use crate::table::Table;
 use crate::test_utils::test_runtime;
@@ -1459,7 +1459,7 @@ impl TableTestFixture {
     /// against the table's sort orders flows into each entry's `FileScanTask`.
     pub(crate) async fn setup_manifest_files_with_sort_order_ids(
         &mut self,
-        sort_order_ids: [Option<i32>; 4],
+        sort_order_ids: [Option<SortOrderId>; 4],
     ) {
         let current_snapshot = self.table.metadata().current_snapshot().unwrap();
         let current_schema = current_snapshot.schema(self.table.metadata()).unwrap();

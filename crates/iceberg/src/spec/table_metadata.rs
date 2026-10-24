@@ -35,8 +35,8 @@ pub use super::table_metadata_builder::{TableMetadataBuildResult, TableMetadataB
 use super::{
     DEFAULT_PARTITION_SPEC_ID, FieldId, PartitionFieldId, PartitionSpecId, PartitionSpecRef,
     PartitionStatisticsFile, Schema, SchemaId, SchemaRef, SnapshotId, SnapshotRef,
-    SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile, StructType, TableProperties,
-    Transform,
+    SnapshotRetention, SortOrder, SortOrderId, SortOrderRef, StatisticsFile, StructType,
+    TableProperties, Transform,
 };
 use crate::catalog::{METADATA_FOLDER_NAME, MetadataLocation};
 use crate::compression::CompressionCodec;
@@ -122,11 +122,11 @@ pub struct TableMetadata {
     pub(crate) metadata_log: Vec<MetadataLog>,
 
     /// A list of sort orders, stored as full sort order objects.
-    pub(crate) sort_orders: HashMap<i64, SortOrderRef>,
+    pub(crate) sort_orders: HashMap<SortOrderId, SortOrderRef>,
     /// Default sort order id of the table. Note that this could be used by
     /// writers, but is not used when reading because reads use the specs
     /// stored in manifest files.
-    pub(crate) default_sort_order_id: i64,
+    pub(crate) default_sort_order_id: SortOrderId,
     /// A map of snapshot references. The map keys are the unique snapshot reference
     /// names in the table, and the map values are snapshot reference objects.
     /// There is always a main branch reference pointing to the current-snapshot-id
@@ -355,7 +355,7 @@ impl TableMetadata {
 
     /// Lookup sort order by id.
     #[inline]
-    pub fn sort_order_by_id(&self, sort_order_id: i64) -> Option<&SortOrderRef> {
+    pub fn sort_order_by_id(&self, sort_order_id: SortOrderId) -> Option<&SortOrderRef> {
         self.sort_orders.get(&sort_order_id)
     }
 
@@ -369,7 +369,7 @@ impl TableMetadata {
 
     /// Returns default sort order id.
     #[inline]
-    pub fn default_sort_order_id(&self) -> i64 {
+    pub fn default_sort_order_id(&self) -> SortOrderId {
         self.default_sort_order_id
     }
 
@@ -786,7 +786,7 @@ pub(super) mod _serde {
     use crate::spec::{
         EncryptedKey, FieldId, INITIAL_ROW_ID, PartitionField, PartitionFieldId, PartitionSpec,
         PartitionSpecId, PartitionSpecRef, PartitionStatisticsFile, Schema, SchemaRef, Snapshot,
-        SnapshotId, SnapshotReference, SnapshotRetention, SortOrder, StatisticsFile,
+        SnapshotId, SnapshotReference, SnapshotRetention, SortOrder, SortOrderId, StatisticsFile,
         UnboundPartitionSpec,
     };
     use crate::{Error, ErrorKind};
@@ -836,7 +836,7 @@ pub(super) mod _serde {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub metadata_log: Option<Vec<MetadataLog>>,
         pub sort_orders: Vec<SortOrder>,
-        pub default_sort_order_id: i64,
+        pub default_sort_order_id: SortOrderId,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub refs: Option<HashMap<String, SnapshotReference>>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -891,7 +891,7 @@ pub(super) mod _serde {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub metadata_log: Option<Vec<MetadataLog>>,
         pub sort_orders: Option<Vec<SortOrder>>,
-        pub default_sort_order_id: Option<i64>,
+        pub default_sort_order_id: Option<SortOrderId>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         pub statistics: Vec<StatisticsFile>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]

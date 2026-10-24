@@ -48,8 +48,8 @@ use crate::runtime::Runtime;
 use crate::spec::{
     EncryptedKey, FieldId, FormatVersion, PartitionFieldId, PartitionSpecId,
     PartitionStatisticsFile, Schema, SchemaId, Snapshot, SnapshotId, SnapshotReference, SortOrder,
-    StatisticsFile, TableMetadata, TableMetadataBuilder, UnboundPartitionSpec, ViewFormatVersion,
-    ViewRepresentations, ViewVersion,
+    SortOrderId, StatisticsFile, TableMetadata, TableMetadataBuilder, UnboundPartitionSpec,
+    ViewFormatVersion, ViewRepresentations, ViewVersion,
 };
 use crate::table::Table;
 use crate::{Error, ErrorKind, Result};
@@ -494,7 +494,7 @@ pub enum TableRequirement {
     DefaultSortOrderIdMatch {
         /// Default sort order id of the table to assert.
         #[serde(rename = "default-sort-order-id")]
-        default_sort_order_id: i64,
+        default_sort_order_id: SortOrderId,
     },
 }
 
@@ -548,7 +548,7 @@ pub enum TableUpdate {
     #[serde(rename_all = "kebab-case")]
     SetDefaultSortOrder {
         /// Sort order ID to set as the default, or -1 to set last added sort order
-        sort_order_id: i64,
+        sort_order_id: SortOrderId,
     },
     /// Add snapshot to table.
     #[serde(rename_all = "kebab-case")]

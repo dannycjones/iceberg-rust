@@ -96,6 +96,9 @@ impl fmt::Display for SortField {
     }
 }
 
+/// Type alias for sort order id.
+pub type SortOrderId = i32;
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Builder, Default)]
 #[serde(rename_all = "kebab-case")]
 #[builder(setter(prefix = "with"))]
@@ -105,14 +108,14 @@ impl fmt::Display for SortField {
 pub struct SortOrder {
     /// Identifier for SortOrder, order_id `0` is no sort order.
     #[builder(default)]
-    pub order_id: i64,
+    pub order_id: SortOrderId,
     /// Details of the sort
     #[builder(setter(each(name = "with_sort_field")), default)]
     pub fields: Vec<SortField>,
 }
 
 impl SortOrder {
-    pub(crate) const UNSORTED_ORDER_ID: i64 = 0;
+    pub(crate) const UNSORTED_ORDER_ID: SortOrderId = 0;
 
     /// Create sort order builder
     pub fn builder() -> SortOrderBuilder {
@@ -135,7 +138,7 @@ impl SortOrder {
     }
 
     /// Set the order id for the sort order
-    pub fn with_order_id(self, order_id: i64) -> SortOrder {
+    pub fn with_order_id(self, order_id: SortOrderId) -> SortOrder {
         SortOrder {
             order_id,
             fields: self.fields,

@@ -24,8 +24,8 @@ use super::{
     DEFAULT_PARTITION_SPEC_ID, DEFAULT_SCHEMA_ID, FieldId, FormatVersion, MAIN_BRANCH, MetadataLog,
     ONE_MINUTE_MS, PartitionField, PartitionFieldId, PartitionSpec, PartitionSpecBuilder,
     PartitionSpecId, PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotLog,
-    SnapshotReference, SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile, StructType,
-    TableMetadata, TableProperties, Transform, UNPARTITIONED_LAST_ASSIGNED_ID,
+    SnapshotReference, SnapshotRetention, SortOrder, SortOrderId, SortOrderRef, StatisticsFile,
+    StructType, TableMetadata, TableProperties, Transform, UNPARTITIONED_LAST_ASSIGNED_ID,
     UnboundPartitionSpec,
 };
 use crate::error::{Error, ErrorKind, Result, invalid_data};
@@ -52,7 +52,7 @@ pub struct TableMetadataBuilder {
     changes: Vec<TableUpdate>,
     last_added_schema_id: Option<i32>,
     last_added_spec_id: Option<PartitionSpecId>,
-    last_added_order_id: Option<i64>,
+    last_added_order_id: Option<SortOrderId>,
     // None if this is a new table (from_metadata) method not used
     previous_history_entry: Option<MetadataLog>,
     last_updated_ms: Option<i64>,
@@ -1022,8 +1022,8 @@ impl TableMetadataBuilder {
     /// # Errors
     /// - sort_order_id is -1 but no sort order has been added via `add_sort_order`.
     /// - No sort order with the provided `sort_order_id` exists.
-    pub fn set_default_sort_order(mut self, mut sort_order_id: i64) -> Result<Self> {
-        if sort_order_id == Self::LAST_ADDED as i64 {
+    pub fn set_default_sort_order(mut self, mut sort_order_id: SortOrderId) -> Result<Self> {
+        if sort_order_id == Self::LAST_ADDED {
             sort_order_id = self.last_added_order_id.ok_or_else(|| {
                 invalid_data!(
                     "Cannot set default sort order to last added order: no order has been added."
@@ -1045,7 +1045,7 @@ impl TableMetadataBuilder {
 
         if self.last_added_order_id == Some(sort_order_id) {
             self.changes.push(TableUpdate::SetDefaultSortOrder {
-                sort_order_id: Self::LAST_ADDED as i64,
+                sort_order_id: Self::LAST_ADDED,
             });
         } else {
             self.changes
@@ -1058,7 +1058,7 @@ impl TableMetadataBuilder {
     /// Add a sort order and set it as the default
     fn add_default_sort_order(self, sort_order: SortOrder) -> Result<Self> {
         self.add_sort_order(sort_order)?
-            .set_default_sort_order(Self::LAST_ADDED as i64)
+            .set_default_sort_order(Self::LAST_ADDED)
     }
 
     /// Add an encryption key to the table metadata.
@@ -1347,7 +1347,7 @@ impl TableMetadataBuilder {
     }
 
     /// If a compatible sort-order already exists, use the same ID. Otherwise, use 1 more than the highest ID.
-    fn reuse_or_create_new_sort_id(&self, new_sort_order: &SortOrder) -> i64 {
+    fn reuse_or_create_new_sort_id(&self, new_sort_order: &SortOrder) -> SortOrderId {
         if new_sort_order.is_unsorted() {
             return SortOrder::unsorted_order().order_id;
         }
@@ -1365,7 +1365,7 @@ impl TableMetadataBuilder {
             })
     }
 
-    fn highest_sort_order_id(&self) -> Option<i64> {
+    fn highest_sort_order_id(&self) -> Option<SortOrderId> {
         self.metadata.sort_orders.keys().max().copied()
     }
 

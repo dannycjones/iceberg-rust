@@ -45,7 +45,8 @@ use crate::metadata_columns::{
 };
 use crate::runtime::Runtime;
 use crate::spec::{
-    DataContentType, FieldId, Schema, SchemaRef, SnapshotId, SnapshotRef, SortOrderRef, StructType,
+    DataContentType, FieldId, Schema, SchemaRef, SnapshotId, SnapshotRef, SortOrderId,
+    SortOrderRef, StructType,
 };
 use crate::table::Table;
 use crate::util::available_parallelism;
@@ -395,7 +396,7 @@ impl<'a> TableScanBuilder<'a> {
                 .metadata()
                 .sort_orders_iter()
                 .map(|order| (order.order_id, order.clone()))
-                .collect::<HashMap<i64, SortOrderRef>>(),
+                .collect::<HashMap<SortOrderId, SortOrderRef>>(),
         );
 
         let plan_context = PlanContext {

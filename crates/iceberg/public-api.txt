@@ -1375,7 +1375,7 @@ pub fn iceberg::scan::FileScanTask::record_count(&self) -> core::option::Option<
 pub fn iceberg::scan::FileScanTask::schema(&self) -> &iceberg::spec::Schema
 pub fn iceberg::scan::FileScanTask::schema_ref(&self) -> iceberg::spec::SchemaRef
 pub fn iceberg::scan::FileScanTask::sort_order(&self) -> core::option::Option<&iceberg::spec::SortOrderRef>
-pub fn iceberg::scan::FileScanTask::sort_order_id(&self) -> core::option::Option<i32>
+pub fn iceberg::scan::FileScanTask::sort_order_id(&self) -> core::option::Option<iceberg::spec::SortOrderId>
 pub fn iceberg::scan::FileScanTask::start(&self) -> u64
 pub fn iceberg::scan::FileScanTask::unified_partition_type(&self) -> core::option::Option<&alloc::sync::Arc<iceberg::spec::StructType>>
 impl core::clone::Clone for iceberg::scan::FileScanTask
@@ -2044,7 +2044,7 @@ pub fn iceberg::spec::DataFile::null_value_counts(&self) -> &std::collections::h
 pub fn iceberg::spec::DataFile::partition(&self) -> &iceberg::spec::Struct
 pub fn iceberg::spec::DataFile::record_count(&self) -> u64
 pub fn iceberg::spec::DataFile::referenced_data_file(&self) -> core::option::Option<alloc::string::String>
-pub fn iceberg::spec::DataFile::sort_order_id(&self) -> core::option::Option<i32>
+pub fn iceberg::spec::DataFile::sort_order_id(&self) -> core::option::Option<iceberg::spec::SortOrderId>
 pub fn iceberg::spec::DataFile::split_offsets(&self) -> core::option::Option<&[i64]>
 pub fn iceberg::spec::DataFile::upper_bounds(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, iceberg::spec::Datum>
 pub fn iceberg::spec::DataFile::value_counts(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>
@@ -2076,7 +2076,7 @@ pub fn iceberg::spec::DataFileBuilder::partition(&mut self, value: iceberg::spec
 pub fn iceberg::spec::DataFileBuilder::partition_spec_id(&mut self, value: iceberg::spec::PartitionSpecId) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::record_count(&mut self, value: u64) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::referenced_data_file(&mut self, value: core::option::Option<alloc::string::String>) -> &mut Self
-pub fn iceberg::spec::DataFileBuilder::sort_order_id(&mut self, value: i32) -> &mut Self
+pub fn iceberg::spec::DataFileBuilder::sort_order_id(&mut self, value: iceberg::spec::SortOrderId) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::split_offsets(&mut self, value: core::option::Option<alloc::vec::Vec<i64>>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::upper_bounds(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, iceberg::spec::Datum>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::value_counts(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>) -> &mut Self
@@ -2755,12 +2755,12 @@ impl<'de> serde_core::de::Deserialize<'de> for iceberg::spec::SortField
 pub fn iceberg::spec::SortField::deserialize<__D>(__deserializer: __D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 pub struct iceberg::spec::SortOrder
 pub iceberg::spec::SortOrder::fields: alloc::vec::Vec<iceberg::spec::SortField>
-pub iceberg::spec::SortOrder::order_id: i64
+pub iceberg::spec::SortOrder::order_id: iceberg::spec::SortOrderId
 impl iceberg::spec::SortOrder
 pub fn iceberg::spec::SortOrder::builder() -> iceberg::spec::SortOrderBuilder
 pub fn iceberg::spec::SortOrder::is_unsorted(&self) -> bool
 pub fn iceberg::spec::SortOrder::unsorted_order() -> iceberg::spec::SortOrder
-pub fn iceberg::spec::SortOrder::with_order_id(self, order_id: i64) -> iceberg::spec::SortOrder
+pub fn iceberg::spec::SortOrder::with_order_id(self, order_id: iceberg::spec::SortOrderId) -> iceberg::spec::SortOrder
 impl core::clone::Clone for iceberg::spec::SortOrder
 pub fn iceberg::spec::SortOrder::clone(&self) -> iceberg::spec::SortOrder
 impl core::cmp::Eq for iceberg::spec::SortOrder
@@ -2781,7 +2781,7 @@ pub fn iceberg::spec::SortOrderBuilder::build(&self, schema: &iceberg::spec::Sch
 pub fn iceberg::spec::SortOrderBuilder::build_unbound(&self) -> iceberg::Result<iceberg::spec::SortOrder>
 impl iceberg::spec::SortOrderBuilder
 pub fn iceberg::spec::SortOrderBuilder::with_fields(&mut self, value: alloc::vec::Vec<iceberg::spec::SortField>) -> &mut Self
-pub fn iceberg::spec::SortOrderBuilder::with_order_id(&mut self, value: i64) -> &mut Self
+pub fn iceberg::spec::SortOrderBuilder::with_order_id(&mut self, value: iceberg::spec::SortOrderId) -> &mut Self
 pub fn iceberg::spec::SortOrderBuilder::with_sort_field<VALUE>(&mut self, item: VALUE) -> &mut Self where alloc::vec::Vec<iceberg::spec::SortField>: core::default::Default + core::iter::traits::collect::Extend<VALUE>
 impl core::clone::Clone for iceberg::spec::SortOrderBuilder
 pub fn iceberg::spec::SortOrderBuilder::clone(&self) -> iceberg::spec::SortOrderBuilder
@@ -2899,7 +2899,7 @@ pub fn iceberg::spec::TableMetadata::default_partition_spec(&self) -> &iceberg::
 pub fn iceberg::spec::TableMetadata::default_partition_spec_id(&self) -> iceberg::spec::PartitionSpecId
 pub fn iceberg::spec::TableMetadata::default_partition_type(&self) -> &iceberg::spec::StructType
 pub fn iceberg::spec::TableMetadata::default_sort_order(&self) -> &iceberg::spec::SortOrderRef
-pub fn iceberg::spec::TableMetadata::default_sort_order_id(&self) -> i64
+pub fn iceberg::spec::TableMetadata::default_sort_order_id(&self) -> iceberg::spec::SortOrderId
 pub fn iceberg::spec::TableMetadata::encryption_key(&self, key_id: &str) -> core::option::Option<&iceberg::spec::EncryptedKey>
 pub fn iceberg::spec::TableMetadata::encryption_keys_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::EncryptedKey>
 pub fn iceberg::spec::TableMetadata::format_version(&self) -> iceberg::spec::FormatVersion
@@ -2927,7 +2927,7 @@ pub fn iceberg::spec::TableMetadata::schemas_iter(&self) -> impl core::iter::tra
 pub fn iceberg::spec::TableMetadata::snapshot_by_id(&self, snapshot_id: iceberg::spec::SnapshotId) -> core::option::Option<&iceberg::spec::SnapshotRef>
 pub fn iceberg::spec::TableMetadata::snapshot_for_ref(&self, ref_name: &str) -> core::option::Option<&iceberg::spec::SnapshotRef>
 pub fn iceberg::spec::TableMetadata::snapshots(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::SnapshotRef>
-pub fn iceberg::spec::TableMetadata::sort_order_by_id(&self, sort_order_id: i64) -> core::option::Option<&iceberg::spec::SortOrderRef>
+pub fn iceberg::spec::TableMetadata::sort_order_by_id(&self, sort_order_id: iceberg::spec::SortOrderId) -> core::option::Option<&iceberg::spec::SortOrderRef>
 pub fn iceberg::spec::TableMetadata::sort_orders_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::SortOrderRef>
 pub fn iceberg::spec::TableMetadata::statistics_for_snapshot(&self, snapshot_id: iceberg::spec::SnapshotId) -> core::option::Option<&iceberg::spec::StatisticsFile>
 pub fn iceberg::spec::TableMetadata::statistics_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::StatisticsFile>
@@ -2988,7 +2988,7 @@ pub fn iceberg::spec::TableMetadataBuilder::remove_statistics(self, snapshot_id:
 pub fn iceberg::spec::TableMetadataBuilder::set_branch_snapshot(self, snapshot: iceberg::spec::Snapshot, branch: &str) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::set_current_schema(self, schema_id: i32) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::set_default_partition_spec(self, spec_id: iceberg::spec::PartitionSpecId) -> iceberg::Result<Self>
-pub fn iceberg::spec::TableMetadataBuilder::set_default_sort_order(self, sort_order_id: i64) -> iceberg::Result<Self>
+pub fn iceberg::spec::TableMetadataBuilder::set_default_sort_order(self, sort_order_id: iceberg::spec::SortOrderId) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::set_location(self, location: alloc::string::String) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::set_partition_statistics(self, partition_statistics_file: iceberg::spec::PartitionStatisticsFile) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::set_properties(self, properties: std::collections::hash::map::HashMap<alloc::string::String, alloc::string::String>) -> iceberg::Result<Self>
@@ -3377,6 +3377,7 @@ pub type iceberg::spec::SchemaId = i32
 pub type iceberg::spec::SchemaRef = alloc::sync::Arc<iceberg::spec::Schema>
 pub type iceberg::spec::SnapshotId = i64
 pub type iceberg::spec::SnapshotRef = alloc::sync::Arc<iceberg::spec::Snapshot>
+pub type iceberg::spec::SortOrderId = i32
 pub type iceberg::spec::SortOrderRef = alloc::sync::Arc<iceberg::spec::SortOrder>
 pub type iceberg::spec::TableMetadataRef = alloc::sync::Arc<iceberg::spec::TableMetadata>
 pub type iceberg::spec::UnboundPartitionSpecRef = alloc::sync::Arc<iceberg::spec::UnboundPartitionSpec>
@@ -3776,7 +3777,7 @@ pub enum iceberg::TableRequirement
 pub iceberg::TableRequirement::CurrentSchemaIdMatch
 pub iceberg::TableRequirement::CurrentSchemaIdMatch::current_schema_id: iceberg::spec::SchemaId
 pub iceberg::TableRequirement::DefaultSortOrderIdMatch
-pub iceberg::TableRequirement::DefaultSortOrderIdMatch::default_sort_order_id: i64
+pub iceberg::TableRequirement::DefaultSortOrderIdMatch::default_sort_order_id: iceberg::spec::SortOrderId
 pub iceberg::TableRequirement::DefaultSpecIdMatch
 pub iceberg::TableRequirement::DefaultSpecIdMatch::default_spec_id: iceberg::spec::PartitionSpecId
 pub iceberg::TableRequirement::LastAssignedFieldIdMatch
@@ -3834,7 +3835,7 @@ pub iceberg::TableUpdate::RemoveStatistics::snapshot_id: iceberg::spec::Snapshot
 pub iceberg::TableUpdate::SetCurrentSchema
 pub iceberg::TableUpdate::SetCurrentSchema::schema_id: i32
 pub iceberg::TableUpdate::SetDefaultSortOrder
-pub iceberg::TableUpdate::SetDefaultSortOrder::sort_order_id: i64
+pub iceberg::TableUpdate::SetDefaultSortOrder::sort_order_id: iceberg::spec::SortOrderId
 pub iceberg::TableUpdate::SetDefaultSpec
 pub iceberg::TableUpdate::SetDefaultSpec::spec_id: iceberg::spec::PartitionSpecId
 pub iceberg::TableUpdate::SetLocation

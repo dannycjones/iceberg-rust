@@ -30,8 +30,8 @@ use crate::scan::{
 };
 use crate::spec::{
     FieldId, ManifestContentType, ManifestEntryRef, ManifestFile, ManifestList, NameMapping,
-    PartitionSpecId, PartitionSpecRef, PrimitiveType, SchemaRef, SnapshotRef, SortOrderRef,
-    StructType, TableMetadataRef,
+    PartitionSpecId, PartitionSpecRef, PrimitiveType, SchemaRef, SnapshotRef, SortOrderId,
+    SortOrderRef, StructType, TableMetadataRef,
 };
 use crate::{Error, ErrorKind, Result};
 
@@ -52,7 +52,7 @@ pub(crate) struct ManifestFileContext {
     case_sensitive: bool,
     partition_spec: Option<PartitionSpecRef>,
     unified_partition_type: Option<Arc<StructType>>,
-    sort_orders: Arc<HashMap<i64, SortOrderRef>>,
+    sort_orders: Arc<HashMap<SortOrderId, SortOrderRef>>,
 }
 
 /// Wraps a [`ManifestEntryRef`] alongside the objects that are needed
@@ -70,7 +70,7 @@ pub(crate) struct ManifestEntryContext {
     pub case_sensitive: bool,
     pub partition_spec: Option<PartitionSpecRef>,
     pub unified_partition_type: Option<Arc<StructType>>,
-    pub sort_order_id: Option<i32>,
+    pub sort_order_id: Option<SortOrderId>,
     pub sort_order: Option<SortOrderRef>,
 }
 
@@ -152,7 +152,7 @@ impl ManifestFileContext {
             // recoverable.
             let sort_order_id = manifest_entry.data_file().sort_order_id();
             let sort_order = sort_order_id
-                .and_then(|id| sort_orders.get(&(id as i64)))
+                .and_then(|id| sort_orders.get(&id))
                 .filter(|order| !order.is_unsorted())
                 .cloned();
 
@@ -266,7 +266,7 @@ pub(crate) struct PlanContext {
     /// The table's sort orders keyed by id, precomputed once so each
     /// [`ManifestFileContext`] carries only this narrow map rather than the full table
     /// metadata. Mirrors how `unified_partition_type` carries a precomputed value.
-    pub sort_orders: Arc<HashMap<i64, SortOrderRef>>,
+    pub sort_orders: Arc<HashMap<SortOrderId, SortOrderRef>>,
 }
 
 impl PlanContext {
