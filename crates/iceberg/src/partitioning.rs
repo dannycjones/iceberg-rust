@@ -22,7 +22,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::error::invalid_data;
 use crate::spec::{
-    NestedField, NestedFieldRef, PartitionField, PartitionSpec, Schema, StructType, Transform, Type,
+    NestedField, NestedFieldRef, PartitionField, PartitionFieldId, PartitionSpec, Schema,
+    StructType, Transform, Type,
 };
 use crate::{Error, ErrorKind, Result};
 
@@ -56,9 +57,9 @@ pub fn compute_unified_partition_type<'a>(
 
     let active_field_ids = all_active_field_ids(specs.iter().copied(), schema);
 
-    let mut field_map: HashMap<i32, &PartitionField> = HashMap::new();
-    let mut type_map: HashMap<i32, Type> = HashMap::new();
-    let mut name_map: HashMap<i32, String> = HashMap::new();
+    let mut field_map: HashMap<PartitionFieldId, &PartitionField> = HashMap::new();
+    let mut type_map: HashMap<PartitionFieldId, Type> = HashMap::new();
+    let mut name_map: HashMap<PartitionFieldId, String> = HashMap::new();
 
     for spec in &specs {
         for field in spec.fields() {
@@ -117,7 +118,7 @@ pub fn compute_unified_partition_type<'a>(
         }
     }
 
-    let mut field_ids: Vec<i32> = field_map.keys().copied().collect();
+    let mut field_ids: Vec<PartitionFieldId> = field_map.keys().copied().collect();
     field_ids.sort();
 
     let struct_fields = field_ids
@@ -164,7 +165,7 @@ fn compatible_transforms(t1: &Transform, t2: &Transform) -> bool {
 fn all_active_field_ids<'a>(
     partition_specs: impl Iterator<Item = &'a PartitionSpec>,
     schema: &Schema,
-) -> HashSet<i32> {
+) -> HashSet<PartitionFieldId> {
     partition_specs
         .flat_map(|spec| spec.fields().iter())
         .filter(|field| schema.field_by_id(field.source_id).is_some())

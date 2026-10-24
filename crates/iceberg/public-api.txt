@@ -2508,7 +2508,7 @@ pub fn iceberg::spec::NestedField::serialize<__S>(&self, __serializer: __S) -> c
 impl<'de> serde_core::de::Deserialize<'de> for iceberg::spec::NestedField
 pub fn iceberg::spec::NestedField::deserialize<__D>(__deserializer: __D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 pub struct iceberg::spec::PartitionField
-pub iceberg::spec::PartitionField::field_id: i32
+pub iceberg::spec::PartitionField::field_id: iceberg::spec::PartitionFieldId
 pub iceberg::spec::PartitionField::name: alloc::string::String
 pub iceberg::spec::PartitionField::source_id: i32
 pub iceberg::spec::PartitionField::transform: iceberg::spec::Transform
@@ -2548,7 +2548,7 @@ impl iceberg::spec::PartitionSpec
 pub fn iceberg::spec::PartitionSpec::builder(schema: impl core::convert::Into<iceberg::spec::SchemaRef>) -> iceberg::spec::PartitionSpecBuilder
 pub fn iceberg::spec::PartitionSpec::fields(&self) -> &[iceberg::spec::PartitionField]
 pub fn iceberg::spec::PartitionSpec::has_sequential_ids(&self) -> bool
-pub fn iceberg::spec::PartitionSpec::highest_field_id(&self) -> core::option::Option<i32>
+pub fn iceberg::spec::PartitionSpec::highest_field_id(&self) -> core::option::Option<iceberg::spec::PartitionFieldId>
 pub fn iceberg::spec::PartitionSpec::into_unbound(self) -> iceberg::spec::UnboundPartitionSpec
 pub fn iceberg::spec::PartitionSpec::is_compatible_with(&self, other: &iceberg::spec::PartitionSpec) -> bool
 pub fn iceberg::spec::PartitionSpec::is_unpartitioned(&self) -> bool
@@ -2579,7 +2579,7 @@ pub fn iceberg::spec::PartitionSpecBuilder::add_unbound_fields(self, fields: imp
 pub fn iceberg::spec::PartitionSpecBuilder::build(self) -> iceberg::Result<iceberg::spec::PartitionSpec>
 pub fn iceberg::spec::PartitionSpecBuilder::new(schema: impl core::convert::Into<iceberg::spec::SchemaRef>) -> Self
 pub fn iceberg::spec::PartitionSpecBuilder::new_from_unbound(unbound: iceberg::spec::UnboundPartitionSpec, schema: impl core::convert::Into<iceberg::spec::SchemaRef>) -> iceberg::Result<Self>
-pub fn iceberg::spec::PartitionSpecBuilder::with_last_assigned_field_id(self, last_assigned_field_id: i32) -> Self
+pub fn iceberg::spec::PartitionSpecBuilder::with_last_assigned_field_id(self, last_assigned_field_id: iceberg::spec::PartitionFieldId) -> Self
 pub fn iceberg::spec::PartitionSpecBuilder::with_spec_id(self, spec_id: i32) -> Self
 impl core::fmt::Debug for iceberg::spec::PartitionSpecBuilder
 pub fn iceberg::spec::PartitionSpecBuilder::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
@@ -2906,7 +2906,7 @@ pub fn iceberg::spec::TableMetadata::format_version(&self) -> iceberg::spec::For
 pub fn iceberg::spec::TableMetadata::history(&self) -> &[iceberg::spec::SnapshotLog]
 pub fn iceberg::spec::TableMetadata::into_builder(self, current_file_location: core::option::Option<alloc::string::String>) -> iceberg::spec::TableMetadataBuilder
 pub fn iceberg::spec::TableMetadata::last_column_id(&self) -> i32
-pub fn iceberg::spec::TableMetadata::last_partition_id(&self) -> i32
+pub fn iceberg::spec::TableMetadata::last_partition_id(&self) -> iceberg::spec::PartitionFieldId
 pub fn iceberg::spec::TableMetadata::last_sequence_number(&self) -> i64
 pub fn iceberg::spec::TableMetadata::last_updated_ms(&self) -> i64
 pub fn iceberg::spec::TableMetadata::last_updated_timestamp(&self) -> iceberg::Result<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
@@ -3108,12 +3108,12 @@ impl<'properties> core::fmt::Debug for iceberg::spec::TableProperties<'propertie
 pub fn iceberg::spec::TableProperties<'properties>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 pub struct iceberg::spec::UnboundPartitionField
 impl iceberg::spec::UnboundPartitionField
-pub fn iceberg::spec::UnboundPartitionField::field_id(&self) -> core::option::Option<i32>
+pub fn iceberg::spec::UnboundPartitionField::field_id(&self) -> core::option::Option<iceberg::spec::PartitionFieldId>
 pub fn iceberg::spec::UnboundPartitionField::name(&self) -> &str
 pub fn iceberg::spec::UnboundPartitionField::source_id(&self) -> iceberg::Result<i32>
 pub fn iceberg::spec::UnboundPartitionField::source_ids(&self) -> &[i32]
 pub fn iceberg::spec::UnboundPartitionField::transform(&self) -> iceberg::spec::Transform
-pub fn iceberg::spec::UnboundPartitionField::with_field_id(self, field_id: i32) -> Self
+pub fn iceberg::spec::UnboundPartitionField::with_field_id(self, field_id: iceberg::spec::PartitionFieldId) -> Self
 impl core::clone::Clone for iceberg::spec::UnboundPartitionField
 pub fn iceberg::spec::UnboundPartitionField::clone(&self) -> iceberg::spec::UnboundPartitionField
 impl core::cmp::Eq for iceberg::spec::UnboundPartitionField
@@ -3369,6 +3369,7 @@ pub fn iceberg::spec::write_data_files_to_avro<W: std::io::Write>(writer: &mut W
 pub type iceberg::spec::Decimal = fastnum::decimal::D128
 pub type iceberg::spec::ManifestEntryRef = alloc::sync::Arc<iceberg::spec::ManifestEntry>
 pub type iceberg::spec::NestedFieldRef = alloc::sync::Arc<iceberg::spec::NestedField>
+pub type iceberg::spec::PartitionFieldId = i32
 pub type iceberg::spec::PartitionSpecRef = alloc::sync::Arc<iceberg::spec::PartitionSpec>
 pub type iceberg::spec::SchemaId = i32
 pub type iceberg::spec::SchemaRef = alloc::sync::Arc<iceberg::spec::Schema>
@@ -3778,7 +3779,7 @@ pub iceberg::TableRequirement::DefaultSpecIdMatch::default_spec_id: i32
 pub iceberg::TableRequirement::LastAssignedFieldIdMatch
 pub iceberg::TableRequirement::LastAssignedFieldIdMatch::last_assigned_field_id: i32
 pub iceberg::TableRequirement::LastAssignedPartitionIdMatch
-pub iceberg::TableRequirement::LastAssignedPartitionIdMatch::last_assigned_partition_id: i32
+pub iceberg::TableRequirement::LastAssignedPartitionIdMatch::last_assigned_partition_id: iceberg::spec::PartitionFieldId
 pub iceberg::TableRequirement::NotExist
 pub iceberg::TableRequirement::RefSnapshotIdMatch
 pub iceberg::TableRequirement::RefSnapshotIdMatch::ref: alloc::string::String

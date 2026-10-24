@@ -33,9 +33,9 @@ use uuid::Uuid;
 use super::snapshot::SnapshotReference;
 pub use super::table_metadata_builder::{TableMetadataBuildResult, TableMetadataBuilder};
 use super::{
-    DEFAULT_PARTITION_SPEC_ID, PartitionSpecRef, PartitionStatisticsFile, Schema, SchemaId,
-    SchemaRef, SnapshotRef, SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile, StructType,
-    TableProperties, Transform,
+    DEFAULT_PARTITION_SPEC_ID, PartitionFieldId, PartitionSpecRef, PartitionStatisticsFile, Schema,
+    SchemaId, SchemaRef, SnapshotRef, SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile,
+    StructType, TableProperties, Transform,
 };
 use crate::catalog::{METADATA_FOLDER_NAME, MetadataLocation};
 use crate::compression::CompressionCodec;
@@ -91,7 +91,7 @@ pub struct TableMetadata {
     /// Partition type of the default partition spec.
     pub(crate) default_partition_type: StructType,
     /// An integer; the highest assigned partition field ID across all partition specs for the table.
-    pub(crate) last_partition_id: i32,
+    pub(crate) last_partition_id: PartitionFieldId,
     ///A string to string map of table properties. This is used to control settings that
     /// affect reading and writing and is not intended to be used for arbitrary metadata.
     /// For example, commit.retry.num-retries is used to control the number of commit retries.
@@ -213,7 +213,7 @@ impl TableMetadata {
 
     /// Returns the last partition_id
     #[inline]
-    pub fn last_partition_id(&self) -> i32 {
+    pub fn last_partition_id(&self) -> PartitionFieldId {
         self.last_partition_id
     }
 
@@ -783,9 +783,9 @@ pub(super) mod _serde {
     use crate::spec::schema::_serde::{SchemaV1, SchemaV2};
     use crate::spec::snapshot::_serde::{SnapshotV1, SnapshotV2, SnapshotV3};
     use crate::spec::{
-        EncryptedKey, INITIAL_ROW_ID, PartitionField, PartitionSpec, PartitionSpecRef,
-        PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotReference, SnapshotRetention,
-        SortOrder, StatisticsFile, UnboundPartitionSpec,
+        EncryptedKey, INITIAL_ROW_ID, PartitionField, PartitionFieldId, PartitionSpec,
+        PartitionSpecRef, PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotReference,
+        SnapshotRetention, SortOrder, StatisticsFile, UnboundPartitionSpec,
     };
     use crate::{Error, ErrorKind};
 
@@ -824,7 +824,7 @@ pub(super) mod _serde {
         pub current_schema_id: i32,
         pub partition_specs: Vec<PartitionSpec>,
         pub default_spec_id: i32,
-        pub last_partition_id: i32,
+        pub last_partition_id: PartitionFieldId,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub properties: Option<HashMap<String, String>>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -877,7 +877,7 @@ pub(super) mod _serde {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub default_spec_id: Option<i32>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub last_partition_id: Option<i32>,
+        pub last_partition_id: Option<PartitionFieldId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub properties: Option<HashMap<String, String>>,
         #[serde(skip_serializing_if = "Option::is_none")]

@@ -30,7 +30,10 @@ use crate::Result;
 use crate::error::invalid_data;
 use crate::spec::Struct;
 
-pub(crate) const UNPARTITIONED_LAST_ASSIGNED_ID: i32 = 999;
+/// Type alias for partition field id.
+pub type PartitionFieldId = i32;
+
+pub(crate) const UNPARTITIONED_LAST_ASSIGNED_ID: PartitionFieldId = 999;
 pub(crate) const DEFAULT_PARTITION_SPEC_ID: i32 = 0;
 
 /// Partition fields capture the transform from table data to partition values.
@@ -41,7 +44,7 @@ pub struct PartitionField {
     pub source_id: i32,
     /// A partition field id that is used to identify a partition field and is unique within a partition spec.
     /// In v2 table metadata, it is unique across all partition specs.
-    pub field_id: i32,
+    pub field_id: PartitionFieldId,
     /// A partition name.
     pub name: String,
     /// A transform that is applied to the source column to produce a partition value.
@@ -150,7 +153,7 @@ impl PartitionSpec {
     }
 
     /// Get the highest field id in the partition spec.
-    pub fn highest_field_id(&self) -> Option<i32> {
+    pub fn highest_field_id(&self) -> Option<PartitionFieldId> {
         self.fields.iter().map(|f| f.field_id).max()
     }
 
@@ -281,7 +284,7 @@ pub struct UnboundPartitionField {
     /// A partition field id that is used to identify a partition field and is unique within a partition spec.
     /// In v2 table metadata, it is unique across all partition specs.
     #[builder(default, setter(strip_option(fallback = field_id_opt)))]
-    field_id: Option<i32>,
+    field_id: Option<PartitionFieldId>,
     /// A partition name.
     #[builder(setter(into))]
     name: String,
@@ -311,7 +314,7 @@ impl UnboundPartitionField {
     }
 
     /// The partition field id, when one was assigned.
-    pub fn field_id(&self) -> Option<i32> {
+    pub fn field_id(&self) -> Option<PartitionFieldId> {
         self.field_id
     }
 
@@ -326,7 +329,7 @@ impl UnboundPartitionField {
     }
 
     /// Return this field with the given partition field id assigned.
-    pub fn with_field_id(self, field_id: i32) -> Self {
+    pub fn with_field_id(self, field_id: PartitionFieldId) -> Self {
         Self {
             field_id: Some(field_id),
             ..self
@@ -354,7 +357,7 @@ mod _serde {
     use super::UnboundPartitionField;
     use crate::Error;
     use crate::error::invalid_data;
-    use crate::spec::Transform;
+    use crate::spec::{PartitionFieldId, Transform};
 
     /// Per the spec a single-argument field carries `source-id` and a multi-argument field
     /// carries `source-ids`. Either spelling is read, but not both at once; the one that
@@ -367,7 +370,7 @@ mod _serde {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         source_ids: Option<Vec<i32>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        field_id: Option<i32>,
+        field_id: Option<PartitionFieldId>,
         name: String,
         transform: Transform,
     }
@@ -463,7 +466,7 @@ impl UnboundPartitionSpec {
     }
 }
 
-fn has_sequential_ids(field_ids: impl Iterator<Item = i32>) -> bool {
+fn has_sequential_ids(field_ids: impl Iterator<Item = PartitionFieldId>) -> bool {
     for (index, field_id) in field_ids.enumerate() {
         let expected_id = (UNPARTITIONED_LAST_ASSIGNED_ID as i64)
             .checked_add(1)
@@ -556,7 +559,7 @@ impl UnboundPartitionSpecBuilder {
 #[derive(Debug)]
 pub struct PartitionSpecBuilder {
     spec_id: Option<i32>,
-    last_assigned_field_id: i32,
+    last_assigned_field_id: PartitionFieldId,
     fields: Vec<UnboundPartitionField>,
     schema: SchemaRef,
 }
@@ -591,7 +594,7 @@ impl PartitionSpecBuilder {
     /// Set this field when a new partition spec is created for an existing TableMetaData.
     /// As `field_id` must be unique in V2 metadata, this should be set to
     /// the highest field id used previously.
-    pub fn with_last_assigned_field_id(mut self, last_assigned_field_id: i32) -> Self {
+    pub fn with_last_assigned_field_id(mut self, last_assigned_field_id: PartitionFieldId) -> Self {
         self.last_assigned_field_id = last_assigned_field_id;
         self
     }
@@ -681,7 +684,7 @@ impl PartitionSpecBuilder {
 
     fn set_field_ids(
         fields: Vec<UnboundPartitionField>,
-        last_assigned_field_id: i32,
+        last_assigned_field_id: PartitionFieldId,
     ) -> Result<Vec<PartitionField>> {
         let mut last_assigned_field_id = last_assigned_field_id;
         // Already assigned partition ids. If we see one of these during iteration,
@@ -691,7 +694,7 @@ impl PartitionSpecBuilder {
             .filter_map(|f| f.field_id)
             .collect::<std::collections::HashSet<_>>();
 
-        fn _check_add_1(prev: i32) -> Result<i32> {
+        fn _check_add_1(prev: PartitionFieldId) -> Result<PartitionFieldId> {
             prev.checked_add(1)
                 .ok_or_else(|| invalid_data!("Cannot assign more partition ids. Overflow."))
         }
@@ -826,7 +829,7 @@ trait CorePartitionSpecValidator {
     }
 
     /// Check field / partition_id unique within the partition spec if set
-    fn check_partition_id_unique(&self, field_id: i32) -> Result<()> {
+    fn check_partition_id_unique(&self, field_id: PartitionFieldId) -> Result<()> {
         if self.fields().iter().any(|f| f.field_id == Some(field_id)) {
             return Err(invalid_data!(
                 "Cannot use field id more than once in one PartitionSpec: {field_id}"
@@ -1588,7 +1591,11 @@ mod tests {
             .unwrap()
     }
 
-    fn ts_field(field_id: i32, name: &str, transform: Transform) -> UnboundPartitionField {
+    fn ts_field(
+        field_id: PartitionFieldId,
+        name: &str,
+        transform: Transform,
+    ) -> UnboundPartitionField {
         UnboundPartitionField {
             source_ids: vec![1],
             field_id: Some(field_id),
@@ -1652,7 +1659,7 @@ mod tests {
 
     #[test]
     fn test_bind_accepts_identical_fields_with_different_names() {
-        let bucket_field = |field_id: i32, name: &str| UnboundPartitionField {
+        let bucket_field = |field_id: PartitionFieldId, name: &str| UnboundPartitionField {
             source_ids: vec![2],
             field_id: Some(field_id),
             name: name.to_string(),

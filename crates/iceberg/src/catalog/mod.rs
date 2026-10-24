@@ -46,8 +46,8 @@ use crate::error::invalid_data;
 use crate::io::StorageFactory;
 use crate::runtime::Runtime;
 use crate::spec::{
-    EncryptedKey, FormatVersion, PartitionStatisticsFile, Schema, SchemaId, Snapshot,
-    SnapshotReference, SortOrder, StatisticsFile, TableMetadata, TableMetadataBuilder,
+    EncryptedKey, FormatVersion, PartitionFieldId, PartitionStatisticsFile, Schema, SchemaId,
+    Snapshot, SnapshotReference, SortOrder, StatisticsFile, TableMetadata, TableMetadataBuilder,
     UnboundPartitionSpec, ViewFormatVersion, ViewRepresentations, ViewVersion,
 };
 use crate::table::Table;
@@ -479,7 +479,7 @@ pub enum TableRequirement {
     LastAssignedPartitionIdMatch {
         /// Last assigned partition id of the table to assert.
         #[serde(rename = "last-assigned-partition-id")]
-        last_assigned_partition_id: i32,
+        last_assigned_partition_id: PartitionFieldId,
     },
     /// The table's default spec id must match the requirement.
     #[serde(rename = "assert-default-spec-id")]

@@ -22,10 +22,10 @@ use uuid::Uuid;
 
 use super::{
     DEFAULT_PARTITION_SPEC_ID, DEFAULT_SCHEMA_ID, FormatVersion, MAIN_BRANCH, MetadataLog,
-    ONE_MINUTE_MS, PartitionField, PartitionSpec, PartitionSpecBuilder, PartitionStatisticsFile,
-    Schema, SchemaRef, Snapshot, SnapshotLog, SnapshotReference, SnapshotRetention, SortOrder,
-    SortOrderRef, StatisticsFile, StructType, TableMetadata, TableProperties, Transform,
-    UNPARTITIONED_LAST_ASSIGNED_ID, UnboundPartitionSpec,
+    ONE_MINUTE_MS, PartitionField, PartitionFieldId, PartitionSpec, PartitionSpecBuilder,
+    PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotLog, SnapshotReference,
+    SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile, StructType, TableMetadata,
+    TableProperties, Transform, UNPARTITIONED_LAST_ASSIGNED_ID, UnboundPartitionSpec,
 };
 use crate::error::{Error, ErrorKind, Result, invalid_data};
 use crate::spec::{EncryptedKey, INITIAL_ROW_ID, MIN_FORMAT_VERSION_ROW_LINEAGE};
@@ -878,12 +878,12 @@ impl TableMetadataBuilder {
     /// the specs of a `TableMetadata` is an arbitrary `HashMap` iteration order.
     fn highest_equivalent_field_ids<'a>(
         fields: impl Iterator<Item = &'a PartitionField>,
-    ) -> HashMap<(Vec<i32>, Transform), i32> {
+    ) -> HashMap<(Vec<i32>, Transform), PartitionFieldId> {
         let mut equivalent_field_ids = HashMap::new();
         for field in fields {
             equivalent_field_ids
                 .entry((vec![field.source_id], field.transform))
-                .and_modify(|id: &mut i32| *id = (*id).max(field.field_id))
+                .and_modify(|id: &mut PartitionFieldId| *id = (*id).max(field.field_id))
                 .or_insert(field.field_id);
         }
         equivalent_field_ids
@@ -2474,7 +2474,7 @@ mod tests {
     #[test]
     fn test_add_partition_spec_accepts_void_fields_of_removed_fields() {
         let builder = builder_without_changes(FormatVersion::V1);
-        let void_field = |field_id: i32, name: &str| {
+        let void_field = |field_id: PartitionFieldId, name: &str| {
             UnboundPartitionField::builder()
                 .source_ids(vec![2])
                 .field_id(field_id)
@@ -2508,7 +2508,7 @@ mod tests {
             ])
             .build()
             .unwrap();
-        let time_field = |field_id: i32, name: &str, transform: Transform| {
+        let time_field = |field_id: PartitionFieldId, name: &str, transform: Transform| {
             UnboundPartitionField::builder()
                 .source_ids(vec![1])
                 .field_id(field_id)
@@ -3791,7 +3791,7 @@ mod tests {
 
         // Verify field ID reuse: spec 2 should reuse IDs from specs 0 and 1, assign new ID for new field
         let spec2 = result.metadata.partition_spec_by_id(2).unwrap();
-        let field_ids: Vec<i32> = spec2.fields().iter().map(|f| f.field_id).collect();
+        let field_ids: Vec<PartitionFieldId> = spec2.fields().iter().map(|f| f.field_id).collect();
         assert_eq!(field_ids, vec![1000, 1001, 1002]); // Reused 1000, 1001; new 1002
     }
 
@@ -3903,7 +3903,7 @@ mod tests {
             .unwrap();
 
         let spec = result.metadata.partition_spec_by_id(4).unwrap();
-        let fields: Vec<(i32, i32)> = spec
+        let fields: Vec<(i32, PartitionFieldId)> = spec
             .fields()
             .iter()
             .map(|f| (f.source_id, f.field_id))
