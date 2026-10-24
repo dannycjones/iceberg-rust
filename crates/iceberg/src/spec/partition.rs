@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use typed_builder::TypedBuilder;
 
 use super::transform::Transform;
-use super::{NestedField, PrimitiveType, Schema, SchemaRef, StructType};
+use super::{FieldId, NestedField, PrimitiveType, Schema, SchemaRef, StructType};
 use crate::Result;
 use crate::error::invalid_data;
 use crate::spec::Struct;
@@ -41,7 +41,7 @@ pub(crate) const DEFAULT_PARTITION_SPEC_ID: i32 = 0;
 #[serde(rename_all = "kebab-case")]
 pub struct PartitionField {
     /// A source column id from the table’s schema
-    pub source_id: i32,
+    pub source_id: FieldId,
     /// A partition field id that is used to identify a partition field and is unique within a partition spec.
     /// In v2 table metadata, it is unique across all partition specs.
     pub field_id: PartitionFieldId,
@@ -280,7 +280,7 @@ pub type UnboundPartitionSpecRef = Arc<UnboundPartitionSpec>;
 pub struct UnboundPartitionField {
     /// The source column ids from the table’s schema. A single-argument transform reads one
     /// id; a v3 multi-argument transform reads several.
-    source_ids: Vec<i32>,
+    source_ids: Vec<FieldId>,
     /// A partition field id that is used to identify a partition field and is unique within a partition spec.
     /// In v2 table metadata, it is unique across all partition specs.
     #[builder(default, setter(strip_option(fallback = field_id_opt)))]
@@ -297,7 +297,7 @@ impl UnboundPartitionField {
     ///
     /// Returns an error for a multi-argument field, which reads several columns and therefore
     /// has no single source id. Use [`Self::source_ids`] to handle both shapes.
-    pub fn source_id(&self) -> Result<i32> {
+    pub fn source_id(&self) -> Result<FieldId> {
         match self.source_ids.as_slice() {
             [source_id] => Ok(*source_id),
             source_ids => Err(invalid_data!(
@@ -309,7 +309,7 @@ impl UnboundPartitionField {
     }
 
     /// The source column ids this field reads, in order. Never empty.
-    pub fn source_ids(&self) -> &[i32] {
+    pub fn source_ids(&self) -> &[FieldId] {
         &self.source_ids
     }
 
@@ -357,7 +357,7 @@ mod _serde {
     use super::UnboundPartitionField;
     use crate::Error;
     use crate::error::invalid_data;
-    use crate::spec::{PartitionFieldId, Transform};
+    use crate::spec::{FieldId, PartitionFieldId, Transform};
 
     /// Per the spec a single-argument field carries `source-id` and a multi-argument field
     /// carries `source-ids`. Either spelling is read, but not both at once; the one that
@@ -366,9 +366,9 @@ mod _serde {
     #[serde(rename_all = "kebab-case")]
     pub(super) struct UnboundPartitionFieldSerde {
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        source_id: Option<i32>,
+        source_id: Option<FieldId>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        source_ids: Option<Vec<i32>>,
+        source_ids: Option<Vec<FieldId>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         field_id: Option<PartitionFieldId>,
         name: String,
@@ -809,7 +809,7 @@ trait CorePartitionSpecValidator {
     /// For a single source-column transformations must be unique.
     fn check_for_redundant_partitions(
         &self,
-        source_ids: &[i32],
+        source_ids: &[FieldId],
         transform: &Transform,
     ) -> Result<()> {
         let collision = self.fields().iter().find(|f| {

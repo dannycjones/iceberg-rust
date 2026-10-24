@@ -2009,7 +2009,7 @@ pub fn iceberg::spec::ViewRepresentation::serialize<__S>(&self, __serializer: __
 impl<'de> serde_core::de::Deserialize<'de> for iceberg::spec::ViewRepresentation
 pub fn iceberg::spec::ViewRepresentation::deserialize<__D>(__deserializer: __D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 pub struct iceberg::spec::BlobMetadata
-pub iceberg::spec::BlobMetadata::fields: alloc::vec::Vec<i32>
+pub iceberg::spec::BlobMetadata::fields: alloc::vec::Vec<iceberg::spec::FieldId>
 pub iceberg::spec::BlobMetadata::properties: std::collections::hash::map::HashMap<alloc::string::String, alloc::string::String>
 pub iceberg::spec::BlobMetadata::sequence_number: i64
 pub iceberg::spec::BlobMetadata::snapshot_id: i64
@@ -2028,26 +2028,26 @@ impl<'de> serde_core::de::Deserialize<'de> for iceberg::spec::BlobMetadata
 pub fn iceberg::spec::BlobMetadata::deserialize<__D>(__deserializer: __D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 pub struct iceberg::spec::DataFile
 impl iceberg::spec::DataFile
-pub fn iceberg::spec::DataFile::column_sizes(&self) -> &std::collections::hash::map::HashMap<i32, u64>
+pub fn iceberg::spec::DataFile::column_sizes(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>
 pub fn iceberg::spec::DataFile::content_offset(&self) -> core::option::Option<i64>
 pub fn iceberg::spec::DataFile::content_size_in_bytes(&self) -> core::option::Option<i64>
 pub fn iceberg::spec::DataFile::content_type(&self) -> iceberg::spec::DataContentType
-pub fn iceberg::spec::DataFile::equality_ids(&self) -> core::option::Option<alloc::vec::Vec<i32>>
+pub fn iceberg::spec::DataFile::equality_ids(&self) -> core::option::Option<alloc::vec::Vec<iceberg::spec::FieldId>>
 pub fn iceberg::spec::DataFile::file_format(&self) -> iceberg::spec::DataFileFormat
 pub fn iceberg::spec::DataFile::file_path(&self) -> &str
 pub fn iceberg::spec::DataFile::file_size_in_bytes(&self) -> u64
 pub fn iceberg::spec::DataFile::first_row_id(&self) -> core::option::Option<i64>
 pub fn iceberg::spec::DataFile::key_metadata(&self) -> core::option::Option<&[u8]>
-pub fn iceberg::spec::DataFile::lower_bounds(&self) -> &std::collections::hash::map::HashMap<i32, iceberg::spec::Datum>
-pub fn iceberg::spec::DataFile::nan_value_counts(&self) -> &std::collections::hash::map::HashMap<i32, u64>
-pub fn iceberg::spec::DataFile::null_value_counts(&self) -> &std::collections::hash::map::HashMap<i32, u64>
+pub fn iceberg::spec::DataFile::lower_bounds(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, iceberg::spec::Datum>
+pub fn iceberg::spec::DataFile::nan_value_counts(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>
+pub fn iceberg::spec::DataFile::null_value_counts(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>
 pub fn iceberg::spec::DataFile::partition(&self) -> &iceberg::spec::Struct
 pub fn iceberg::spec::DataFile::record_count(&self) -> u64
 pub fn iceberg::spec::DataFile::referenced_data_file(&self) -> core::option::Option<alloc::string::String>
 pub fn iceberg::spec::DataFile::sort_order_id(&self) -> core::option::Option<i32>
 pub fn iceberg::spec::DataFile::split_offsets(&self) -> core::option::Option<&[i64]>
-pub fn iceberg::spec::DataFile::upper_bounds(&self) -> &std::collections::hash::map::HashMap<i32, iceberg::spec::Datum>
-pub fn iceberg::spec::DataFile::value_counts(&self) -> &std::collections::hash::map::HashMap<i32, u64>
+pub fn iceberg::spec::DataFile::upper_bounds(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, iceberg::spec::Datum>
+pub fn iceberg::spec::DataFile::value_counts(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>
 impl core::clone::Clone for iceberg::spec::DataFile
 pub fn iceberg::spec::DataFile::clone(&self) -> iceberg::spec::DataFile
 impl core::cmp::Eq for iceberg::spec::DataFile
@@ -2059,27 +2059,27 @@ impl core::marker::StructuralPartialEq for iceberg::spec::DataFile
 pub struct iceberg::spec::DataFileBuilder
 impl iceberg::spec::DataFileBuilder
 pub fn iceberg::spec::DataFileBuilder::build(&self) -> core::result::Result<iceberg::spec::DataFile, iceberg::spec::DataFileBuilderError>
-pub fn iceberg::spec::DataFileBuilder::column_sizes(&mut self, value: std::collections::hash::map::HashMap<i32, u64>) -> &mut Self
+pub fn iceberg::spec::DataFileBuilder::column_sizes(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::content(&mut self, value: iceberg::spec::DataContentType) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::content_offset(&mut self, value: core::option::Option<i64>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::content_size_in_bytes(&mut self, value: core::option::Option<i64>) -> &mut Self
-pub fn iceberg::spec::DataFileBuilder::equality_ids(&mut self, value: core::option::Option<alloc::vec::Vec<i32>>) -> &mut Self
+pub fn iceberg::spec::DataFileBuilder::equality_ids(&mut self, value: core::option::Option<alloc::vec::Vec<iceberg::spec::FieldId>>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::file_format(&mut self, value: iceberg::spec::DataFileFormat) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::file_path(&mut self, value: alloc::string::String) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::file_size_in_bytes(&mut self, value: u64) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::first_row_id(&mut self, value: core::option::Option<i64>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::key_metadata(&mut self, value: core::option::Option<alloc::vec::Vec<u8>>) -> &mut Self
-pub fn iceberg::spec::DataFileBuilder::lower_bounds(&mut self, value: std::collections::hash::map::HashMap<i32, iceberg::spec::Datum>) -> &mut Self
-pub fn iceberg::spec::DataFileBuilder::nan_value_counts(&mut self, value: std::collections::hash::map::HashMap<i32, u64>) -> &mut Self
-pub fn iceberg::spec::DataFileBuilder::null_value_counts(&mut self, value: std::collections::hash::map::HashMap<i32, u64>) -> &mut Self
+pub fn iceberg::spec::DataFileBuilder::lower_bounds(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, iceberg::spec::Datum>) -> &mut Self
+pub fn iceberg::spec::DataFileBuilder::nan_value_counts(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>) -> &mut Self
+pub fn iceberg::spec::DataFileBuilder::null_value_counts(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::partition(&mut self, value: iceberg::spec::Struct) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::partition_spec_id(&mut self, value: i32) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::record_count(&mut self, value: u64) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::referenced_data_file(&mut self, value: core::option::Option<alloc::string::String>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::sort_order_id(&mut self, value: i32) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::split_offsets(&mut self, value: core::option::Option<alloc::vec::Vec<i64>>) -> &mut Self
-pub fn iceberg::spec::DataFileBuilder::upper_bounds(&mut self, value: std::collections::hash::map::HashMap<i32, iceberg::spec::Datum>) -> &mut Self
-pub fn iceberg::spec::DataFileBuilder::value_counts(&mut self, value: std::collections::hash::map::HashMap<i32, u64>) -> &mut Self
+pub fn iceberg::spec::DataFileBuilder::upper_bounds(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, iceberg::spec::Datum>) -> &mut Self
+pub fn iceberg::spec::DataFileBuilder::value_counts(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>) -> &mut Self
 impl core::clone::Clone for iceberg::spec::DataFileBuilder
 pub fn iceberg::spec::DataFileBuilder::clone(&self) -> iceberg::spec::DataFileBuilder
 impl core::default::Default for iceberg::spec::DataFileBuilder
@@ -2411,8 +2411,8 @@ pub iceberg::spec::MapType::key_field: iceberg::spec::NestedFieldRef
 pub iceberg::spec::MapType::value_field: iceberg::spec::NestedFieldRef
 impl iceberg::spec::MapType
 pub fn iceberg::spec::MapType::new(key_field: iceberg::spec::NestedFieldRef, value_field: iceberg::spec::NestedFieldRef) -> Self
-pub fn iceberg::spec::MapType::optional(key_id: i32, key_type: iceberg::spec::Type, value_id: i32, value_type: iceberg::spec::Type) -> Self
-pub fn iceberg::spec::MapType::required(key_id: i32, key_type: iceberg::spec::Type, value_id: i32, value_type: iceberg::spec::Type) -> Self
+pub fn iceberg::spec::MapType::optional(key_id: iceberg::spec::FieldId, key_type: iceberg::spec::Type, value_id: iceberg::spec::FieldId, value_type: iceberg::spec::Type) -> Self
+pub fn iceberg::spec::MapType::required(key_id: iceberg::spec::FieldId, key_type: iceberg::spec::Type, value_id: iceberg::spec::FieldId, value_type: iceberg::spec::Type) -> Self
 impl core::clone::Clone for iceberg::spec::MapType
 pub fn iceberg::spec::MapType::clone(&self) -> iceberg::spec::MapType
 impl core::cmp::Eq for iceberg::spec::MapType
@@ -2425,10 +2425,10 @@ pub fn iceberg::spec::MapType::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> c
 impl core::marker::StructuralPartialEq for iceberg::spec::MapType
 pub struct iceberg::spec::MappedField
 impl iceberg::spec::MappedField
-pub fn iceberg::spec::MappedField::field_id(&self) -> core::option::Option<i32>
+pub fn iceberg::spec::MappedField::field_id(&self) -> core::option::Option<iceberg::spec::FieldId>
 pub fn iceberg::spec::MappedField::fields(&self) -> &[alloc::sync::Arc<iceberg::spec::MappedField>]
 pub fn iceberg::spec::MappedField::names(&self) -> &[alloc::string::String]
-pub fn iceberg::spec::MappedField::new(field_id: core::option::Option<i32>, names: alloc::vec::Vec<alloc::string::String>, fields: alloc::vec::Vec<iceberg::spec::MappedField>) -> Self
+pub fn iceberg::spec::MappedField::new(field_id: core::option::Option<iceberg::spec::FieldId>, names: alloc::vec::Vec<alloc::string::String>, fields: alloc::vec::Vec<iceberg::spec::MappedField>) -> Self
 impl core::clone::Clone for iceberg::spec::MappedField
 pub fn iceberg::spec::MappedField::clone(&self) -> iceberg::spec::MappedField
 impl core::cmp::Eq for iceberg::spec::MappedField
@@ -2478,18 +2478,18 @@ pub fn iceberg::spec::NameMapping::deserialize<__D>(__deserializer: __D) -> core
 pub struct iceberg::spec::NestedField
 pub iceberg::spec::NestedField::doc: core::option::Option<alloc::string::String>
 pub iceberg::spec::NestedField::field_type: alloc::boxed::Box<iceberg::spec::Type>
-pub iceberg::spec::NestedField::id: i32
+pub iceberg::spec::NestedField::id: iceberg::spec::FieldId
 pub iceberg::spec::NestedField::initial_default: core::option::Option<iceberg::spec::Literal>
 pub iceberg::spec::NestedField::name: alloc::string::String
 pub iceberg::spec::NestedField::required: bool
 pub iceberg::spec::NestedField::write_default: core::option::Option<iceberg::spec::Literal>
 impl iceberg::spec::NestedField
-pub fn iceberg::spec::NestedField::list_element(id: i32, field_type: iceberg::spec::Type, required: bool) -> Self
-pub fn iceberg::spec::NestedField::map_key_element(id: i32, field_type: iceberg::spec::Type) -> Self
-pub fn iceberg::spec::NestedField::map_value_element(id: i32, field_type: iceberg::spec::Type, required: bool) -> Self
-pub fn iceberg::spec::NestedField::new(id: i32, name: impl alloc::string::ToString, field_type: iceberg::spec::Type, required: bool) -> Self
-pub fn iceberg::spec::NestedField::optional(id: i32, name: impl alloc::string::ToString, field_type: iceberg::spec::Type) -> Self
-pub fn iceberg::spec::NestedField::required(id: i32, name: impl alloc::string::ToString, field_type: iceberg::spec::Type) -> Self
+pub fn iceberg::spec::NestedField::list_element(id: iceberg::spec::FieldId, field_type: iceberg::spec::Type, required: bool) -> Self
+pub fn iceberg::spec::NestedField::map_key_element(id: iceberg::spec::FieldId, field_type: iceberg::spec::Type) -> Self
+pub fn iceberg::spec::NestedField::map_value_element(id: iceberg::spec::FieldId, field_type: iceberg::spec::Type, required: bool) -> Self
+pub fn iceberg::spec::NestedField::new(id: iceberg::spec::FieldId, name: impl alloc::string::ToString, field_type: iceberg::spec::Type, required: bool) -> Self
+pub fn iceberg::spec::NestedField::optional(id: iceberg::spec::FieldId, name: impl alloc::string::ToString, field_type: iceberg::spec::Type) -> Self
+pub fn iceberg::spec::NestedField::required(id: iceberg::spec::FieldId, name: impl alloc::string::ToString, field_type: iceberg::spec::Type) -> Self
 pub fn iceberg::spec::NestedField::with_doc(self, doc: impl alloc::string::ToString) -> Self
 pub fn iceberg::spec::NestedField::with_initial_default(self, value: iceberg::spec::Literal) -> Self
 pub fn iceberg::spec::NestedField::with_write_default(self, value: iceberg::spec::Literal) -> Self
@@ -2510,7 +2510,7 @@ pub fn iceberg::spec::NestedField::deserialize<__D>(__deserializer: __D) -> core
 pub struct iceberg::spec::PartitionField
 pub iceberg::spec::PartitionField::field_id: iceberg::spec::PartitionFieldId
 pub iceberg::spec::PartitionField::name: alloc::string::String
-pub iceberg::spec::PartitionField::source_id: i32
+pub iceberg::spec::PartitionField::source_id: iceberg::spec::FieldId
 pub iceberg::spec::PartitionField::transform: iceberg::spec::Transform
 impl iceberg::spec::PartitionField
 pub fn iceberg::spec::PartitionField::into_unbound(self) -> iceberg::spec::UnboundPartitionField
@@ -2601,23 +2601,23 @@ impl<'de> serde_core::de::Deserialize<'de> for iceberg::spec::PartitionStatistic
 pub fn iceberg::spec::PartitionStatisticsFile::deserialize<__D>(__deserializer: __D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 pub struct iceberg::spec::Schema
 impl iceberg::spec::Schema
-pub fn iceberg::spec::Schema::accessor_by_field_id(&self, field_id: i32) -> core::option::Option<alloc::sync::Arc<iceberg::expr::accessor::StructAccessor>>
+pub fn iceberg::spec::Schema::accessor_by_field_id(&self, field_id: iceberg::spec::FieldId) -> core::option::Option<alloc::sync::Arc<iceberg::expr::accessor::StructAccessor>>
 pub fn iceberg::spec::Schema::as_struct(&self) -> &iceberg::spec::StructType
 pub fn iceberg::spec::Schema::builder() -> iceberg::spec::SchemaBuilder
 pub fn iceberg::spec::Schema::calc_min_compatible_format(&self) -> iceberg::spec::FormatVersion
 pub fn iceberg::spec::Schema::check_format_compatibility(&self, format_version: iceberg::spec::FormatVersion) -> iceberg::Result<()>
 pub fn iceberg::spec::Schema::field_by_alias(&self, alias: &str) -> core::option::Option<&iceberg::spec::NestedFieldRef>
-pub fn iceberg::spec::Schema::field_by_id(&self, field_id: i32) -> core::option::Option<&iceberg::spec::NestedFieldRef>
+pub fn iceberg::spec::Schema::field_by_id(&self, field_id: iceberg::spec::FieldId) -> core::option::Option<&iceberg::spec::NestedFieldRef>
 pub fn iceberg::spec::Schema::field_by_name(&self, field_name: &str) -> core::option::Option<&iceberg::spec::NestedFieldRef>
 pub fn iceberg::spec::Schema::field_by_name_case_insensitive(&self, field_name: &str) -> core::option::Option<&iceberg::spec::NestedFieldRef>
 pub fn iceberg::spec::Schema::field_by_name_case_insensitive_checked(&self, field_name: &str) -> iceberg::Result<core::option::Option<&iceberg::spec::NestedFieldRef>>
-pub fn iceberg::spec::Schema::field_id_by_name(&self, name: &str) -> core::option::Option<i32>
-pub fn iceberg::spec::Schema::field_id_to_fields(&self) -> &std::collections::hash::map::HashMap<i32, iceberg::spec::NestedFieldRef>
-pub fn iceberg::spec::Schema::field_id_to_name_map(&self) -> &std::collections::hash::map::HashMap<i32, alloc::string::String>
-pub fn iceberg::spec::Schema::highest_field_id(&self) -> i32
-pub fn iceberg::spec::Schema::identifier_field_ids(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = i32> + '_
+pub fn iceberg::spec::Schema::field_id_by_name(&self, name: &str) -> core::option::Option<iceberg::spec::FieldId>
+pub fn iceberg::spec::Schema::field_id_to_fields(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, iceberg::spec::NestedFieldRef>
+pub fn iceberg::spec::Schema::field_id_to_name_map(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, alloc::string::String>
+pub fn iceberg::spec::Schema::highest_field_id(&self) -> iceberg::spec::FieldId
+pub fn iceberg::spec::Schema::identifier_field_ids(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = iceberg::spec::FieldId> + '_
 pub fn iceberg::spec::Schema::into_builder(self) -> iceberg::spec::SchemaBuilder
-pub fn iceberg::spec::Schema::name_by_field_id(&self, field_id: i32) -> core::option::Option<&str>
+pub fn iceberg::spec::Schema::name_by_field_id(&self, field_id: iceberg::spec::FieldId) -> core::option::Option<&str>
 pub fn iceberg::spec::Schema::schema_id(&self) -> iceberg::spec::SchemaId
 impl core::clone::Clone for iceberg::spec::Schema
 pub fn iceberg::spec::Schema::clone(&self) -> iceberg::spec::Schema
@@ -2641,9 +2641,9 @@ pub fn iceberg::spec::Schema::deserialize<__D>(__deserializer: __D) -> core::res
 pub struct iceberg::spec::SchemaBuilder
 impl iceberg::spec::SchemaBuilder
 pub fn iceberg::spec::SchemaBuilder::build(self) -> iceberg::Result<iceberg::spec::Schema>
-pub fn iceberg::spec::SchemaBuilder::with_alias(self, alias_to_id: bimap::hash::BiHashMap<alloc::string::String, i32>) -> Self
+pub fn iceberg::spec::SchemaBuilder::with_alias(self, alias_to_id: bimap::hash::BiHashMap<alloc::string::String, iceberg::spec::FieldId>) -> Self
 pub fn iceberg::spec::SchemaBuilder::with_fields(self, fields: impl core::iter::traits::collect::IntoIterator<Item = iceberg::spec::NestedFieldRef>) -> Self
-pub fn iceberg::spec::SchemaBuilder::with_identifier_field_ids(self, ids: impl core::iter::traits::collect::IntoIterator<Item = i32>) -> Self
+pub fn iceberg::spec::SchemaBuilder::with_identifier_field_ids(self, ids: impl core::iter::traits::collect::IntoIterator<Item = iceberg::spec::FieldId>) -> Self
 pub fn iceberg::spec::SchemaBuilder::with_schema_id(self, schema_id: i32) -> Self
 impl core::fmt::Debug for iceberg::spec::SchemaBuilder
 pub fn iceberg::spec::SchemaBuilder::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
@@ -2735,7 +2735,7 @@ pub fn iceberg::spec::SnapshotSummaryCollector::default() -> iceberg::spec::Snap
 pub struct iceberg::spec::SortField
 pub iceberg::spec::SortField::direction: iceberg::spec::SortDirection
 pub iceberg::spec::SortField::null_order: iceberg::spec::NullOrder
-pub iceberg::spec::SortField::source_id: i32
+pub iceberg::spec::SortField::source_id: iceberg::spec::FieldId
 pub iceberg::spec::SortField::transform: iceberg::spec::Transform
 impl core::clone::Clone for iceberg::spec::SortField
 pub fn iceberg::spec::SortField::clone(&self) -> iceberg::spec::SortField
@@ -2850,7 +2850,7 @@ pub type iceberg::spec::Struct::Output = core::option::Option<iceberg::spec::Lit
 pub fn iceberg::spec::Struct::index(&self, idx: usize) -> &Self::Output
 pub struct iceberg::spec::StructType
 impl iceberg::spec::StructType
-pub fn iceberg::spec::StructType::field_by_id(&self, id: i32) -> core::option::Option<&iceberg::spec::NestedFieldRef>
+pub fn iceberg::spec::StructType::field_by_id(&self, id: iceberg::spec::FieldId) -> core::option::Option<&iceberg::spec::NestedFieldRef>
 pub fn iceberg::spec::StructType::field_by_name(&self, name: &str) -> core::option::Option<&iceberg::spec::NestedFieldRef>
 pub fn iceberg::spec::StructType::fields(&self) -> &[iceberg::spec::NestedFieldRef]
 pub fn iceberg::spec::StructType::new(fields: alloc::vec::Vec<iceberg::spec::NestedFieldRef>) -> Self
@@ -2905,7 +2905,7 @@ pub fn iceberg::spec::TableMetadata::encryption_keys_iter(&self) -> impl core::i
 pub fn iceberg::spec::TableMetadata::format_version(&self) -> iceberg::spec::FormatVersion
 pub fn iceberg::spec::TableMetadata::history(&self) -> &[iceberg::spec::SnapshotLog]
 pub fn iceberg::spec::TableMetadata::into_builder(self, current_file_location: core::option::Option<alloc::string::String>) -> iceberg::spec::TableMetadataBuilder
-pub fn iceberg::spec::TableMetadata::last_column_id(&self) -> i32
+pub fn iceberg::spec::TableMetadata::last_column_id(&self) -> iceberg::spec::FieldId
 pub fn iceberg::spec::TableMetadata::last_partition_id(&self) -> iceberg::spec::PartitionFieldId
 pub fn iceberg::spec::TableMetadata::last_sequence_number(&self) -> i64
 pub fn iceberg::spec::TableMetadata::last_updated_ms(&self) -> i64
@@ -3110,8 +3110,8 @@ pub struct iceberg::spec::UnboundPartitionField
 impl iceberg::spec::UnboundPartitionField
 pub fn iceberg::spec::UnboundPartitionField::field_id(&self) -> core::option::Option<iceberg::spec::PartitionFieldId>
 pub fn iceberg::spec::UnboundPartitionField::name(&self) -> &str
-pub fn iceberg::spec::UnboundPartitionField::source_id(&self) -> iceberg::Result<i32>
-pub fn iceberg::spec::UnboundPartitionField::source_ids(&self) -> &[i32]
+pub fn iceberg::spec::UnboundPartitionField::source_id(&self) -> iceberg::Result<iceberg::spec::FieldId>
+pub fn iceberg::spec::UnboundPartitionField::source_ids(&self) -> &[iceberg::spec::FieldId]
 pub fn iceberg::spec::UnboundPartitionField::transform(&self) -> iceberg::spec::Transform
 pub fn iceberg::spec::UnboundPartitionField::with_field_id(self, field_id: iceberg::spec::PartitionFieldId) -> Self
 impl core::clone::Clone for iceberg::spec::UnboundPartitionField
@@ -3358,7 +3358,7 @@ pub fn iceberg::spec::SchemaWithPartnerVisitor::schema(&mut self, schema: &icebe
 pub fn iceberg::spec::SchemaWithPartnerVisitor::struct(&mut self, struct: &iceberg::spec::StructType, partner: &P, results: alloc::vec::Vec<Self::T>) -> iceberg::Result<Self::T>
 pub fn iceberg::spec::SchemaWithPartnerVisitor::variant(&mut self, v: &iceberg::spec::VariantType, partner: &P) -> iceberg::Result<Self::T>
 pub fn iceberg::spec::deserialize_data_file_from_json(json: &str, partition_spec_id: i32, partition_type: &iceberg::spec::StructType, schema: &iceberg::spec::Schema) -> iceberg::Result<iceberg::spec::DataFile>
-pub fn iceberg::spec::prune_columns(schema: &iceberg::spec::Schema, selected: impl core::iter::traits::collect::IntoIterator<Item = i32>, select_full_types: bool) -> iceberg::Result<iceberg::spec::Type>
+pub fn iceberg::spec::prune_columns(schema: &iceberg::spec::Schema, selected: impl core::iter::traits::collect::IntoIterator<Item = iceberg::spec::FieldId>, select_full_types: bool) -> iceberg::Result<iceberg::spec::Type>
 pub fn iceberg::spec::read_data_files_from_avro<R: std::io::Read>(reader: &mut R, schema: &iceberg::spec::Schema, partition_spec_id: i32, partition_type: &iceberg::spec::StructType, version: iceberg::spec::FormatVersion) -> iceberg::Result<alloc::vec::Vec<iceberg::spec::DataFile>>
 pub fn iceberg::spec::serialize_data_file_to_json(data_file: iceberg::spec::DataFile, partition_type: &iceberg::spec::StructType, format_version: iceberg::spec::FormatVersion) -> iceberg::Result<alloc::string::String>
 pub fn iceberg::spec::visit_schema<V: iceberg::spec::SchemaVisitor>(schema: &iceberg::spec::Schema, visitor: &mut V) -> iceberg::Result<<V as iceberg::spec::SchemaVisitor>::T>
@@ -3367,6 +3367,7 @@ pub fn iceberg::spec::visit_struct<V: iceberg::spec::SchemaVisitor>(s: &iceberg:
 pub fn iceberg::spec::visit_struct_with_partner<P, V: iceberg::spec::SchemaWithPartnerVisitor<P>, A: iceberg::spec::PartnerAccessor<P>>(s: &iceberg::spec::StructType, partner: &P, visitor: &mut V, accessor: &A) -> iceberg::Result<<V as iceberg::spec::SchemaWithPartnerVisitor>::T>
 pub fn iceberg::spec::write_data_files_to_avro<W: std::io::Write>(writer: &mut W, data_files: impl core::iter::traits::collect::IntoIterator<Item = iceberg::spec::DataFile>, partition_type: &iceberg::spec::StructType, version: iceberg::spec::FormatVersion) -> iceberg::Result<usize>
 pub type iceberg::spec::Decimal = fastnum::decimal::D128
+pub type iceberg::spec::FieldId = i32
 pub type iceberg::spec::ManifestEntryRef = alloc::sync::Arc<iceberg::spec::ManifestEntry>
 pub type iceberg::spec::NestedFieldRef = alloc::sync::Arc<iceberg::spec::NestedField>
 pub type iceberg::spec::PartitionFieldId = i32

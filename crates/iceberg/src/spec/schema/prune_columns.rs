@@ -17,17 +17,17 @@
 
 use super::*;
 use crate::error::invalid_data;
-use crate::spec::VariantType;
+use crate::spec::{FieldId, VariantType};
 
 struct PruneColumn {
-    selected: HashSet<i32>,
+    selected: HashSet<FieldId>,
     select_full_types: bool,
 }
 
 /// Visit a schema and returns only the fields selected by id set
 pub fn prune_columns(
     schema: &Schema,
-    selected: impl IntoIterator<Item = i32>,
+    selected: impl IntoIterator<Item = FieldId>,
     select_full_types: bool,
 ) -> Result<Type> {
     let mut visitor = PruneColumn::new(HashSet::from_iter(selected), select_full_types);
@@ -46,7 +46,7 @@ pub fn prune_columns(
 }
 
 impl PruneColumn {
-    fn new(selected: HashSet<i32>, select_full_types: bool) -> Self {
+    fn new(selected: HashSet<FieldId>, select_full_types: bool) -> Self {
         Self {
             selected,
             select_full_types,
@@ -260,7 +260,7 @@ mod tests {
                 .clone(),
         );
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([1]);
+        let selected: HashSet<FieldId> = HashSet::from([1]);
         let result = prune_columns(&schema, selected, false);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -279,7 +279,7 @@ mod tests {
                 .clone(),
         );
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([1]);
+        let selected: HashSet<FieldId> = HashSet::from([1]);
         let result = prune_columns(&schema, selected, true);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -310,7 +310,7 @@ mod tests {
                 .clone(),
         );
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([5]);
+        let selected: HashSet<FieldId> = HashSet::from([5]);
         let result = prune_columns(&schema, selected, false);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -319,7 +319,7 @@ mod tests {
     #[test]
     fn test_prune_columns_list_itself() {
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([4]);
+        let selected: HashSet<FieldId> = HashSet::from([4]);
         let result = prune_columns(&schema, selected, false);
         assert!(result.is_err());
     }
@@ -349,7 +349,7 @@ mod tests {
                 .clone(),
         );
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([5]);
+        let selected: HashSet<FieldId> = HashSet::from([5]);
         let result = prune_columns(&schema, selected, true);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -397,7 +397,7 @@ mod tests {
                 .clone(),
         );
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([9]);
+        let selected: HashSet<FieldId> = HashSet::from([9]);
         let result = prune_columns(&schema, selected, false);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -406,7 +406,7 @@ mod tests {
     #[test]
     fn test_prune_columns_map_itself() {
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([6]);
+        let selected: HashSet<FieldId> = HashSet::from([6]);
         let result = prune_columns(&schema, selected, false);
         assert!(result.is_err());
     }
@@ -453,7 +453,7 @@ mod tests {
                 .clone(),
         );
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([9]);
+        let selected: HashSet<FieldId> = HashSet::from([9]);
         let result = prune_columns(&schema, selected, true);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -501,7 +501,7 @@ mod tests {
                 .clone(),
         );
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([10]);
+        let selected: HashSet<FieldId> = HashSet::from([10]);
         let result = prune_columns(&schema, selected, false);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -528,7 +528,7 @@ mod tests {
                 .clone(),
         );
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([16]);
+        let selected: HashSet<FieldId> = HashSet::from([16]);
         let result = prune_columns(&schema, selected, false);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -555,7 +555,7 @@ mod tests {
                 .clone(),
         );
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = HashSet::from([16]);
+        let selected: HashSet<FieldId> = HashSet::from([16]);
         let result = prune_columns(&schema, selected, true);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -580,7 +580,7 @@ mod tests {
                 .as_struct()
                 .clone(),
         );
-        let selected: HashSet<i32> = HashSet::from([15]);
+        let selected: HashSet<FieldId> = HashSet::from([15]);
         let result = prune_columns(&schema_with_empty_struct_field, selected, false);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -605,7 +605,7 @@ mod tests {
                 .as_struct()
                 .clone(),
         );
-        let selected: HashSet<i32> = HashSet::from([15]);
+        let selected: HashSet<FieldId> = HashSet::from([15]);
         let result = prune_columns(&schema_with_empty_struct_field, selected, true);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -669,7 +669,7 @@ mod tests {
                 .as_struct()
                 .clone(),
         );
-        let selected: HashSet<i32> = HashSet::from([11]);
+        let selected: HashSet<FieldId> = HashSet::from([11]);
         let result = prune_columns(&schema_with_struct_in_map_field, selected, false);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -732,7 +732,7 @@ mod tests {
                 .as_struct()
                 .clone(),
         );
-        let selected: HashSet<i32> = HashSet::from([11]);
+        let selected: HashSet<FieldId> = HashSet::from([11]);
         let result = prune_columns(&schema, selected, true);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), expected_type);
@@ -741,7 +741,7 @@ mod tests {
     #[test]
     fn test_prune_columns_select_original_schema() {
         let schema = table_schema_nested();
-        let selected: HashSet<i32> = (0..schema.highest_field_id() + 1).collect();
+        let selected: HashSet<FieldId> = (0..schema.highest_field_id() + 1).collect();
         let result = prune_columns(&schema, selected, true);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Type::Struct(schema.as_struct().clone()));

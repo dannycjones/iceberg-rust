@@ -33,9 +33,9 @@ use uuid::Uuid;
 use super::snapshot::SnapshotReference;
 pub use super::table_metadata_builder::{TableMetadataBuildResult, TableMetadataBuilder};
 use super::{
-    DEFAULT_PARTITION_SPEC_ID, PartitionFieldId, PartitionSpecRef, PartitionStatisticsFile, Schema,
-    SchemaId, SchemaRef, SnapshotRef, SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile,
-    StructType, TableProperties, Transform,
+    DEFAULT_PARTITION_SPEC_ID, FieldId, PartitionFieldId, PartitionSpecRef,
+    PartitionStatisticsFile, Schema, SchemaId, SchemaRef, SnapshotRef, SnapshotRetention,
+    SortOrder, SortOrderRef, StatisticsFile, StructType, TableProperties, Transform,
 };
 use crate::catalog::{METADATA_FOLDER_NAME, MetadataLocation};
 use crate::compression::CompressionCodec;
@@ -79,7 +79,7 @@ pub struct TableMetadata {
     /// Timestamp in milliseconds from the unix epoch when the table was last updated.
     pub(crate) last_updated_ms: i64,
     /// An integer; the highest assigned column ID for the table.
-    pub(crate) last_column_id: i32,
+    pub(crate) last_column_id: FieldId,
     /// A list of schemas, stored as objects with schema-id.
     pub(crate) schemas: HashMap<i32, SchemaRef>,
     /// ID of the table’s current schema.
@@ -207,7 +207,7 @@ impl TableMetadata {
 
     /// Returns the last column id.
     #[inline]
-    pub fn last_column_id(&self) -> i32 {
+    pub fn last_column_id(&self) -> FieldId {
         self.last_column_id
     }
 
@@ -783,7 +783,7 @@ pub(super) mod _serde {
     use crate::spec::schema::_serde::{SchemaV1, SchemaV2};
     use crate::spec::snapshot::_serde::{SnapshotV1, SnapshotV2, SnapshotV3};
     use crate::spec::{
-        EncryptedKey, INITIAL_ROW_ID, PartitionField, PartitionFieldId, PartitionSpec,
+        EncryptedKey, FieldId, INITIAL_ROW_ID, PartitionField, PartitionFieldId, PartitionSpec,
         PartitionSpecRef, PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotReference,
         SnapshotRetention, SortOrder, StatisticsFile, UnboundPartitionSpec,
     };
@@ -819,7 +819,7 @@ pub(super) mod _serde {
         pub location: String,
         pub last_sequence_number: i64,
         pub last_updated_ms: i64,
-        pub last_column_id: i32,
+        pub last_column_id: FieldId,
         pub schemas: Vec<SchemaV2>,
         pub current_schema_id: i32,
         pub partition_specs: Vec<PartitionSpec>,
@@ -863,7 +863,7 @@ pub(super) mod _serde {
         pub table_uuid: Option<Uuid>,
         pub location: String,
         pub last_updated_ms: i64,
-        pub last_column_id: i32,
+        pub last_column_id: FieldId,
         /// `schema` is optional to prioritize `schemas` and `current-schema-id`, allowing liberal reading of V1 metadata.
         pub schema: Option<SchemaV1>,
         #[serde(skip_serializing_if = "Option::is_none")]

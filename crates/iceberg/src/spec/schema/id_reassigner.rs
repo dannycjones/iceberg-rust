@@ -18,16 +18,17 @@
 use super::utils::try_insert_field;
 use super::*;
 use crate::error::invalid_data;
+use crate::spec::FieldId;
 
 pub struct ReassignFieldIds {
-    next_field_id: i32,
-    old_to_new_id: HashMap<i32, i32>,
+    next_field_id: FieldId,
+    old_to_new_id: HashMap<FieldId, FieldId>,
 }
 
 // We are not using the visitor here, as post order traversal is not desired.
 // Instead we want to re-assign all fields on one level first before diving deeper.
 impl ReassignFieldIds {
-    pub fn new(start_from: i32) -> Self {
+    pub fn new(start_from: FieldId) -> Self {
         Self {
             next_field_id: start_from,
             old_to_new_id: HashMap::new(),
@@ -115,7 +116,10 @@ impl ReassignFieldIds {
         Ok(())
     }
 
-    pub fn apply_to_identifier_fields(&self, field_ids: HashSet<i32>) -> Result<HashSet<i32>> {
+    pub fn apply_to_identifier_fields(
+        &self,
+        field_ids: HashSet<FieldId>,
+    ) -> Result<HashSet<FieldId>> {
         field_ids
             .into_iter()
             .map(|id| {
@@ -129,8 +133,8 @@ impl ReassignFieldIds {
 
     pub fn apply_to_aliases(
         &self,
-        alias: BiHashMap<String, i32>,
-    ) -> Result<BiHashMap<String, i32>> {
+        alias: BiHashMap<String, FieldId>,
+    ) -> Result<BiHashMap<String, FieldId>> {
         alias
             .into_iter()
             .map(|(name, id)| {

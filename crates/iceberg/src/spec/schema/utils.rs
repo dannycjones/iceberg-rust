@@ -19,8 +19,13 @@ use std::collections::HashMap;
 
 use crate::Result;
 use crate::error::invalid_data;
+use crate::spec::FieldId;
 
-pub fn try_insert_field<V>(map: &mut HashMap<i32, V>, field_id: i32, value: V) -> Result<()> {
+pub fn try_insert_field<V>(
+    map: &mut HashMap<FieldId, V>,
+    field_id: FieldId,
+    value: V,
+) -> Result<()> {
     map.insert(field_id, value).map_or_else(
         || Ok(()),
         |_| {

@@ -21,7 +21,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use super::{
-    DEFAULT_PARTITION_SPEC_ID, DEFAULT_SCHEMA_ID, FormatVersion, MAIN_BRANCH, MetadataLog,
+    DEFAULT_PARTITION_SPEC_ID, DEFAULT_SCHEMA_ID, FieldId, FormatVersion, MAIN_BRANCH, MetadataLog,
     ONE_MINUTE_MS, PartitionField, PartitionFieldId, PartitionSpec, PartitionSpecBuilder,
     PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotLog, SnapshotReference,
     SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile, StructType, TableMetadata,
@@ -31,7 +31,7 @@ use crate::error::{Error, ErrorKind, Result, invalid_data};
 use crate::spec::{EncryptedKey, INITIAL_ROW_ID, MIN_FORMAT_VERSION_ROW_LINEAGE};
 use crate::{TableCreation, TableUpdate};
 
-pub(crate) const FIRST_FIELD_ID: i32 = 1;
+pub(crate) const FIRST_FIELD_ID: FieldId = 1;
 
 /// Manipulating table metadata.
 ///
@@ -878,7 +878,7 @@ impl TableMetadataBuilder {
     /// the specs of a `TableMetadata` is an arbitrary `HashMap` iteration order.
     fn highest_equivalent_field_ids<'a>(
         fields: impl Iterator<Item = &'a PartitionField>,
-    ) -> HashMap<(Vec<i32>, Transform), PartitionFieldId> {
+    ) -> HashMap<(Vec<FieldId>, Transform), PartitionFieldId> {
         let mut equivalent_field_ids = HashMap::new();
         for field in fields {
             equivalent_field_ids
@@ -1421,7 +1421,7 @@ mod tests {
     use crate::test_utils::test_runtime;
 
     const TEST_LOCATION: &str = "s3://bucket/test/location";
-    const LAST_ASSIGNED_COLUMN_ID: i32 = 3;
+    const LAST_ASSIGNED_COLUMN_ID: FieldId = 3;
 
     fn schema() -> Schema {
         Schema::builder()
@@ -3903,7 +3903,7 @@ mod tests {
             .unwrap();
 
         let spec = result.metadata.partition_spec_by_id(4).unwrap();
-        let fields: Vec<(i32, PartitionFieldId)> = spec
+        let fields: Vec<(FieldId, PartitionFieldId)> = spec
             .fields()
             .iter()
             .map(|f| (f.source_id, f.field_id))

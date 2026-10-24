@@ -18,11 +18,11 @@
 use super::utils::try_insert_field;
 use super::*;
 use crate::error::invalid_data;
-use crate::spec::VariantType;
+use crate::spec::{FieldId, VariantType};
 
 /// Creates a field id to field map.
-pub fn index_by_id(r#struct: &StructType) -> Result<HashMap<i32, NestedFieldRef>> {
-    struct IndexById(HashMap<i32, NestedFieldRef>);
+pub fn index_by_id(r#struct: &StructType) -> Result<HashMap<FieldId, NestedFieldRef>> {
+    struct IndexById(HashMap<FieldId, NestedFieldRef>);
 
     impl SchemaVisitor for IndexById {
         type T = ();
@@ -67,10 +67,10 @@ pub fn index_by_id(r#struct: &StructType) -> Result<HashMap<i32, NestedFieldRef>
 }
 
 /// Creates a field id to parent field id map.
-pub fn index_parents(r#struct: &StructType) -> Result<HashMap<i32, i32>> {
+pub fn index_parents(r#struct: &StructType) -> Result<HashMap<FieldId, FieldId>> {
     struct IndexByParent {
-        parents: Vec<i32>,
-        result: HashMap<i32, i32>,
+        parents: Vec<FieldId>,
+        result: HashMap<FieldId, FieldId>,
     }
 
     impl SchemaVisitor for IndexByParent {
@@ -168,15 +168,15 @@ pub fn index_parents(r#struct: &StructType) -> Result<HashMap<i32, i32>> {
 #[derive(Default)]
 pub struct IndexByName {
     // Maybe radix tree is better here?
-    name_to_id: HashMap<String, i32>,
-    short_name_to_id: HashMap<String, i32>,
+    name_to_id: HashMap<String, FieldId>,
+    short_name_to_id: HashMap<String, FieldId>,
 
     field_names: Vec<String>,
     short_field_names: Vec<String>,
 }
 
 impl IndexByName {
-    fn add_field(&mut self, name: &str, field_id: i32) -> Result<()> {
+    fn add_field(&mut self, name: &str, field_id: FieldId) -> Result<()> {
         let full_name = self
             .field_names
             .iter()
@@ -207,7 +207,7 @@ impl IndexByName {
     ///
     /// In the first index, short names are returned.
     /// In second index, short names are not returned.
-    pub fn indexes(mut self) -> (HashMap<String, i32>, HashMap<i32, String>) {
+    pub fn indexes(mut self) -> (HashMap<String, FieldId>, HashMap<FieldId, String>) {
         self.short_name_to_id.reserve(self.name_to_id.len());
         for (name, id) in &self.name_to_id {
             self.short_name_to_id.insert(name.clone(), *id);

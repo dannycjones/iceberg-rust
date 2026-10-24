@@ -27,7 +27,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use super::{DEFAULT_SCHEMA_ID, Schema};
-use crate::spec::StructType;
+use crate::spec::{FieldId, StructType};
 use crate::{Error, Result};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -44,7 +44,7 @@ pub(super) enum SchemaEnum {
 pub(crate) struct SchemaV2 {
     pub schema_id: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub identifier_field_ids: Option<Vec<i32>>,
+    pub identifier_field_ids: Option<Vec<FieldId>>,
     #[serde(flatten)]
     pub fields: StructType,
 }
@@ -56,7 +56,7 @@ pub(crate) struct SchemaV1 {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schema_id: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub identifier_field_ids: Option<Vec<i32>>,
+    pub identifier_field_ids: Option<Vec<FieldId>>,
     #[serde(flatten)]
     pub fields: StructType,
 }

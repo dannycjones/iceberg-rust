@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{DefaultOnNull, serde_as};
 
 use crate::error::invalid_data;
+use crate::spec::FieldId;
 use crate::{Error, Result};
 
 /// Iceberg fallback field name to ID mapping.
@@ -62,7 +63,7 @@ impl FromStr for NameMapping {
 #[serde(rename_all = "kebab-case")]
 pub struct MappedField {
     #[serde(skip_serializing_if = "Option::is_none")]
-    field_id: Option<i32>,
+    field_id: Option<FieldId>,
     names: Vec<String>,
     #[serde(default)]
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -72,7 +73,7 @@ pub struct MappedField {
 
 impl MappedField {
     /// Create a new [`MappedField`].
-    pub fn new(field_id: Option<i32>, names: Vec<String>, fields: Vec<MappedField>) -> Self {
+    pub fn new(field_id: Option<FieldId>, names: Vec<String>, fields: Vec<MappedField>) -> Self {
         Self {
             field_id,
             names,
@@ -81,7 +82,7 @@ impl MappedField {
     }
 
     /// Iceberg field ID when a field's name is present within `names`.
-    pub fn field_id(&self) -> Option<i32> {
+    pub fn field_id(&self) -> Option<FieldId> {
         self.field_id
     }
 

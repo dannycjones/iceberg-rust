@@ -30,7 +30,8 @@ use super::{
 use crate::Error;
 use crate::error::{Result, invalid_data};
 use crate::spec::{
-    DEFAULT_PARTITION_SPEC_ID, Literal, NestedFieldRef, PrimitiveType, Struct, StructType, Type,
+    DEFAULT_PARTITION_SPEC_ID, FieldId, Literal, NestedFieldRef, PrimitiveType, Struct, StructType,
+    Type,
 };
 
 /// Data file carries data file path, partition tuple, metrics, …
@@ -71,7 +72,7 @@ pub struct DataFile {
     /// store the column. Does not include bytes necessary to read other
     /// columns, like footers. Leave null for row-oriented formats (Avro)
     #[builder(default)]
-    pub(crate) column_sizes: HashMap<i32, u64>,
+    pub(crate) column_sizes: HashMap<FieldId, u64>,
     /// field id: 109
     /// key field id: 119
     /// value field id: 120
@@ -79,21 +80,21 @@ pub struct DataFile {
     /// Map from column id to number of values in the column (including null
     /// and NaN values)
     #[builder(default)]
-    pub(crate) value_counts: HashMap<i32, u64>,
+    pub(crate) value_counts: HashMap<FieldId, u64>,
     /// field id: 110
     /// key field id: 121
     /// value field id: 122
     ///
     /// Map from column id to number of null values in the column
     #[builder(default)]
-    pub(crate) null_value_counts: HashMap<i32, u64>,
+    pub(crate) null_value_counts: HashMap<FieldId, u64>,
     /// field id: 137
     /// key field id: 138
     /// value field id: 139
     ///
     /// Map from column id to number of NaN values in the column
     #[builder(default)]
-    pub(crate) nan_value_counts: HashMap<i32, u64>,
+    pub(crate) nan_value_counts: HashMap<FieldId, u64>,
     /// field id: 125
     /// key field id: 126
     /// value field id: 127
@@ -106,7 +107,7 @@ pub struct DataFile {
     ///
     /// - [Binary single-value serialization](https://iceberg.apache.org/spec/#binary-single-value-serialization)
     #[builder(default)]
-    pub(crate) lower_bounds: HashMap<i32, Datum>,
+    pub(crate) lower_bounds: HashMap<FieldId, Datum>,
     /// field id: 128
     /// key field id: 129
     /// value field id: 130
@@ -119,7 +120,7 @@ pub struct DataFile {
     ///
     /// - [Binary single-value serialization](https://iceberg.apache.org/spec/#binary-single-value-serialization)
     #[builder(default)]
-    pub(crate) upper_bounds: HashMap<i32, Datum>,
+    pub(crate) upper_bounds: HashMap<FieldId, Datum>,
     /// field id: 131
     ///
     /// Implementation-specific key metadata for encryption
@@ -141,7 +142,7 @@ pub struct DataFile {
     /// otherwise. Fields with ids listed in this column must be present
     /// in the delete file
     #[builder(default)]
-    pub(crate) equality_ids: Option<Vec<i32>>,
+    pub(crate) equality_ids: Option<Vec<FieldId>>,
     /// field id: 140
     ///
     /// ID representing sort order for this file.
@@ -279,33 +280,33 @@ impl DataFile {
     /// Map from column id to the total size on disk of all regions that
     /// store the column. Does not include bytes necessary to read other
     /// columns, like footers. Null for row-oriented formats (Avro)
-    pub fn column_sizes(&self) -> &HashMap<i32, u64> {
+    pub fn column_sizes(&self) -> &HashMap<FieldId, u64> {
         &self.column_sizes
     }
     /// Get the columns value counts for the data file.
     /// Map from column id to number of values in the column (including null
     /// and NaN values)
-    pub fn value_counts(&self) -> &HashMap<i32, u64> {
+    pub fn value_counts(&self) -> &HashMap<FieldId, u64> {
         &self.value_counts
     }
     /// Get the null value counts of the data file.
     /// Map from column id to number of null values in the column
-    pub fn null_value_counts(&self) -> &HashMap<i32, u64> {
+    pub fn null_value_counts(&self) -> &HashMap<FieldId, u64> {
         &self.null_value_counts
     }
     /// Get the nan value counts of the data file.
     /// Map from column id to number of NaN values in the column
-    pub fn nan_value_counts(&self) -> &HashMap<i32, u64> {
+    pub fn nan_value_counts(&self) -> &HashMap<FieldId, u64> {
         &self.nan_value_counts
     }
     /// Get the lower bounds of the data file values per column.
     /// Map from column id to lower bound in the column serialized as binary.
-    pub fn lower_bounds(&self) -> &HashMap<i32, Datum> {
+    pub fn lower_bounds(&self) -> &HashMap<FieldId, Datum> {
         &self.lower_bounds
     }
     /// Get the upper bounds of the data file values per column.
     /// Map from column id to upper bound in the column serialized as binary.
-    pub fn upper_bounds(&self) -> &HashMap<i32, Datum> {
+    pub fn upper_bounds(&self) -> &HashMap<FieldId, Datum> {
         &self.upper_bounds
     }
     /// Get the Implementation-specific key metadata for the data file.
@@ -321,7 +322,7 @@ impl DataFile {
     /// Get the equality ids of the data file.
     /// Field ids used to determine row equality in equality delete files.
     /// null when content is not EqualityDeletes.
-    pub fn equality_ids(&self) -> Option<Vec<i32>> {
+    pub fn equality_ids(&self) -> Option<Vec<FieldId>> {
         self.equality_ids.clone()
     }
     /// Get the first row id in the data file.

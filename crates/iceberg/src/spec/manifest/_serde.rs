@@ -31,7 +31,7 @@ use serde_with::serde_as;
 
 use super::{Datum, ManifestEntry, Schema, Struct};
 use crate::error::invalid_data;
-use crate::spec::{FormatVersion, Literal, RawLiteral, Type};
+use crate::spec::{FieldId, FormatVersion, Literal, RawLiteral, Type};
 use crate::{Error, metadata_columns};
 
 #[derive(Serialize, Deserialize)]
@@ -130,7 +130,7 @@ pub(super) struct DataFileSerde {
     upper_bounds: Option<Vec<BytesEntry>>,
     key_metadata: Option<serde_bytes::ByteBuf>,
     split_offsets: Option<Vec<i64>>,
-    equality_ids: Option<Vec<i32>>,
+    equality_ids: Option<Vec<FieldId>>,
     sort_order_id: Option<i32>,
     first_row_id: Option<i64>,
     referenced_data_file: Option<String>,
@@ -256,11 +256,14 @@ impl DataFileSerde {
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 struct BytesEntry {
-    key: i32,
+    key: FieldId,
     value: serde_bytes::ByteBuf,
 }
 
-fn parse_bytes_entry(v: Vec<BytesEntry>, schema: &Schema) -> Result<HashMap<i32, Datum>, Error> {
+fn parse_bytes_entry(
+    v: Vec<BytesEntry>,
+    schema: &Schema,
+) -> Result<HashMap<FieldId, Datum>, Error> {
     let mut m = HashMap::with_capacity(v.len());
     for entry in v {
         // First try to find the field in the schema, or check if it's a reserved metadata field
@@ -281,7 +284,7 @@ fn parse_bytes_entry(v: Vec<BytesEntry>, schema: &Schema) -> Result<HashMap<i32,
     Ok(m)
 }
 
-fn to_bytes_entry(v: impl IntoIterator<Item = (i32, Datum)>) -> Result<Vec<BytesEntry>, Error> {
+fn to_bytes_entry(v: impl IntoIterator<Item = (FieldId, Datum)>) -> Result<Vec<BytesEntry>, Error> {
     let iter = v.into_iter();
     // Reserve the capacity to the lower bound.
     let mut bs = Vec::with_capacity(iter.size_hint().0);
@@ -297,11 +300,11 @@ fn to_bytes_entry(v: impl IntoIterator<Item = (i32, Datum)>) -> Result<Vec<Bytes
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 struct I64Entry {
-    key: i32,
+    key: FieldId,
     value: i64,
 }
 
-fn parse_i64_entry(v: Vec<I64Entry>) -> Result<HashMap<i32, u64>, Error> {
+fn parse_i64_entry(v: Vec<I64Entry>) -> Result<HashMap<FieldId, u64>, Error> {
     let mut m = HashMap::with_capacity(v.len());
     for entry in v {
         // We ignore the entry if it's value is negative since these entries are supposed to be used for
@@ -314,7 +317,7 @@ fn parse_i64_entry(v: Vec<I64Entry>) -> Result<HashMap<i32, u64>, Error> {
 }
 
 #[allow(unused_mut)]
-fn to_i64_entry(entries: HashMap<i32, u64>) -> Result<Vec<I64Entry>, Error> {
+fn to_i64_entry(entries: HashMap<FieldId, u64>) -> Result<Vec<I64Entry>, Error> {
     let mut i64_entries = entries
         .iter()
         .map(|e| {

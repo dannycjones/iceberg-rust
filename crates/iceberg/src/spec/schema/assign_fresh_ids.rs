@@ -18,6 +18,7 @@
 use super::utils::try_insert_field;
 use super::*;
 use crate::error::invalid_data;
+use crate::spec::FieldId;
 
 /// Reassigns `schema`'s field ids, reusing ids from `base` for fields whose full name is unchanged
 /// and drawing fresh ids from `last_column_id + 1` upwards for everything else.
@@ -35,7 +36,7 @@ use crate::error::invalid_data;
 pub(crate) fn assign_fresh_ids(
     schema: Schema,
     base: &Schema,
-    last_column_id: i32,
+    last_column_id: FieldId,
 ) -> Result<Schema> {
     if last_column_id < base.highest_field_id() {
         return Err(invalid_data!(
@@ -70,14 +71,14 @@ pub(crate) fn assign_fresh_ids(
 }
 
 struct AssignFreshIds {
-    next_field_id: i32,
-    target_names: HashMap<i32, String>,
-    base_ids: HashMap<String, i32>,
-    old_to_new_id: HashMap<i32, i32>,
+    next_field_id: FieldId,
+    target_names: HashMap<FieldId, String>,
+    base_ids: HashMap<String, FieldId>,
+    old_to_new_id: HashMap<FieldId, FieldId>,
 }
 
 impl AssignFreshIds {
-    fn new(target_names: HashMap<i32, String>, base: &Schema, start_from: i32) -> Self {
+    fn new(target_names: HashMap<FieldId, String>, base: &Schema, start_from: FieldId) -> Self {
         Self {
             next_field_id: start_from,
             target_names,
@@ -92,7 +93,7 @@ impl AssignFreshIds {
 
     /// Returns `base`'s id when the field's full name is unchanged, otherwise consumes a fresh id by
     /// advancing `next_field_id`.
-    fn resolve_or_assign_id(&mut self, old_id: i32) -> Result<i32> {
+    fn resolve_or_assign_id(&mut self, old_id: FieldId) -> Result<FieldId> {
         if let Some(id) = self
             .target_names
             .get(&old_id)
@@ -174,7 +175,7 @@ impl AssignFreshIds {
         }
     }
 
-    fn apply_to_identifier_fields(&self, field_ids: HashSet<i32>) -> Result<HashSet<i32>> {
+    fn apply_to_identifier_fields(&self, field_ids: HashSet<FieldId>) -> Result<HashSet<FieldId>> {
         field_ids
             .into_iter()
             .map(|id| {
@@ -186,7 +187,10 @@ impl AssignFreshIds {
             .collect()
     }
 
-    fn apply_to_aliases(&self, aliases: BiHashMap<String, i32>) -> Result<BiHashMap<String, i32>> {
+    fn apply_to_aliases(
+        &self,
+        aliases: BiHashMap<String, FieldId>,
+    ) -> Result<BiHashMap<String, FieldId>> {
         aliases
             .into_iter()
             .map(|(name, id)| {

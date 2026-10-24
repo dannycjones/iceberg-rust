@@ -478,7 +478,7 @@ pub struct StructType {
     fields: Vec<NestedFieldRef>,
     /// Lookup for index by field id
     #[serde(skip_serializing)]
-    id_lookup: OnceLock<HashMap<i32, usize>>,
+    id_lookup: OnceLock<HashMap<FieldId, usize>>,
     #[serde(skip_serializing)]
     name_lookup: OnceLock<HashMap<String, usize>>,
 }
@@ -546,11 +546,11 @@ impl StructType {
     }
 
     /// Get struct field with certain id
-    pub fn field_by_id(&self, id: i32) -> Option<&NestedFieldRef> {
+    pub fn field_by_id(&self, id: FieldId) -> Option<&NestedFieldRef> {
         self.field_id_to_index(id).map(|idx| &self.fields[idx])
     }
 
-    fn field_id_to_index(&self, field_id: i32) -> Option<usize> {
+    fn field_id_to_index(&self, field_id: FieldId) -> Option<usize> {
         self.id_lookup
             .get_or_init(|| {
                 HashMap::from_iter(self.fields.iter().enumerate().map(|(i, x)| (x.id, i)))
@@ -610,6 +610,9 @@ impl fmt::Display for StructType {
     }
 }
 
+/// Type alias for field id.
+pub type FieldId = i32;
+
 #[derive(Debug, PartialEq, Serialize, Deserialize, Eq, Clone)]
 #[serde(try_from = "SerdeNestedField", into = "SerdeNestedField")]
 /// A struct is a tuple of typed values. Each field in the tuple is named and has an integer id that is unique in the table schema.
@@ -617,7 +620,7 @@ impl fmt::Display for StructType {
 /// Fields may have an optional comment or doc string. Fields can have default values.
 pub struct NestedField {
     /// Id unique in table schema
-    pub id: i32,
+    pub id: FieldId,
     /// Field Name
     pub name: String,
     /// Optional or required
@@ -635,7 +638,7 @@ pub struct NestedField {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 struct SerdeNestedField {
-    pub id: i32,
+    pub id: FieldId,
     pub name: String,
     pub required: bool,
     #[serde(rename = "type")]
@@ -696,7 +699,7 @@ pub type NestedFieldRef = Arc<NestedField>;
 
 impl NestedField {
     /// Construct a new field.
-    pub fn new(id: i32, name: impl ToString, field_type: Type, required: bool) -> Self {
+    pub fn new(id: FieldId, name: impl ToString, field_type: Type, required: bool) -> Self {
         Self {
             id,
             name: name.to_string(),
@@ -709,27 +712,27 @@ impl NestedField {
     }
 
     /// Construct a required field.
-    pub fn required(id: i32, name: impl ToString, field_type: Type) -> Self {
+    pub fn required(id: FieldId, name: impl ToString, field_type: Type) -> Self {
         Self::new(id, name, field_type, true)
     }
 
     /// Construct an optional field.
-    pub fn optional(id: i32, name: impl ToString, field_type: Type) -> Self {
+    pub fn optional(id: FieldId, name: impl ToString, field_type: Type) -> Self {
         Self::new(id, name, field_type, false)
     }
 
     /// Construct list type's element field.
-    pub fn list_element(id: i32, field_type: Type, required: bool) -> Self {
+    pub fn list_element(id: FieldId, field_type: Type, required: bool) -> Self {
         Self::new(id, LIST_FIELD_NAME, field_type, required)
     }
 
     /// Construct map type's key field.
-    pub fn map_key_element(id: i32, field_type: Type) -> Self {
+    pub fn map_key_element(id: FieldId, field_type: Type) -> Self {
         Self::required(id, MAP_KEY_FIELD_NAME, field_type)
     }
 
     /// Construct map type's value field.
-    pub fn map_value_element(id: i32, field_type: Type, required: bool) -> Self {
+    pub fn map_value_element(id: FieldId, field_type: Type, required: bool) -> Self {
         Self::new(id, MAP_VALUE_FIELD_NAME, field_type, required)
     }
 
@@ -752,7 +755,7 @@ impl NestedField {
     }
 
     /// Set the id of the field.
-    pub(crate) fn with_id(mut self, id: i32) -> Self {
+    pub(crate) fn with_id(mut self, id: FieldId) -> Self {
         self.id = id;
         self
     }
@@ -798,7 +801,7 @@ pub(super) mod _serde {
 
     use crate::spec::datatypes::Type::Map;
     use crate::spec::datatypes::{
-        ListType, MapType, NestedField, NestedFieldRef, PrimitiveType, StructType, Type,
+        FieldId, ListType, MapType, NestedField, NestedFieldRef, PrimitiveType, StructType, Type,
         VariantType,
     };
 
@@ -809,7 +812,7 @@ pub(super) mod _serde {
         #[serde(rename_all = "kebab-case")]
         List {
             r#type: String,
-            element_id: i32,
+            element_id: FieldId,
             element_required: bool,
             element: Cow<'a, Type>,
         },
@@ -820,9 +823,9 @@ pub(super) mod _serde {
         #[serde(rename_all = "kebab-case")]
         Map {
             r#type: String,
-            key_id: i32,
+            key_id: FieldId,
             key: Cow<'a, Type>,
-            value_id: i32,
+            value_id: FieldId,
             value_required: bool,
             value: Cow<'a, Type>,
         },
@@ -921,7 +924,7 @@ impl MapType {
     }
 
     /// Construct an optional map type with the given key and value fields.
-    pub fn optional(key_id: i32, key_type: Type, value_id: i32, value_type: Type) -> Self {
+    pub fn optional(key_id: FieldId, key_type: Type, value_id: FieldId, value_type: Type) -> Self {
         Self {
             key_field: NestedField::map_key_element(key_id, key_type).into(),
             value_field: NestedField::map_value_element(value_id, value_type, false).into(),
@@ -929,7 +932,7 @@ impl MapType {
     }
 
     /// Construct a required map type with the given key and value fields.
-    pub fn required(key_id: i32, key_type: Type, value_id: i32, value_type: Type) -> Self {
+    pub fn required(key_id: FieldId, key_type: Type, value_id: FieldId, value_type: Type) -> Self {
         Self {
             key_field: NestedField::map_key_element(key_id, key_type).into(),
             value_field: NestedField::map_value_element(value_id, value_type, true).into(),

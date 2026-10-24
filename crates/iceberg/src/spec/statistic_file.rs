@@ -21,6 +21,8 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use crate::spec::FieldId;
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 /// Represents a statistics file
@@ -51,7 +53,7 @@ pub struct BlobMetadata {
     /// Sequence number of the blob.
     pub sequence_number: i64,
     /// Fields of the blob.
-    pub fields: Vec<i32>,
+    pub fields: Vec<FieldId>,
     /// Properties of the blob.
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub properties: HashMap<String, String>,

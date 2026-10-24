@@ -42,11 +42,11 @@ pub use self::prune_columns::prune_columns;
 use super::NestedField;
 use crate::error::{Result, invalid_data};
 use crate::expr::accessor::StructAccessor;
-use crate::spec::FormatVersion;
 use crate::spec::datatypes::{
     LIST_FIELD_NAME, ListType, MAP_KEY_FIELD_NAME, MAP_VALUE_FIELD_NAME, MapType, NestedFieldRef,
     PrimitiveType, StructType, Type,
 };
+use crate::spec::{FieldId, FormatVersion};
 use crate::{Error, ErrorKind, ensure_data_valid};
 
 /// Type alias for schema id.
@@ -67,18 +67,18 @@ pub(crate) const DEFAULT_VALUES_MIN_FORMAT_VERSION: FormatVersion = FormatVersio
 pub struct Schema {
     r#struct: StructType,
     schema_id: SchemaId,
-    highest_field_id: i32,
-    identifier_field_ids: HashSet<i32>,
+    highest_field_id: FieldId,
+    identifier_field_ids: HashSet<FieldId>,
 
-    alias_to_id: BiHashMap<String, i32>,
-    id_to_field: HashMap<i32, NestedFieldRef>,
+    alias_to_id: BiHashMap<String, FieldId>,
+    id_to_field: HashMap<FieldId, NestedFieldRef>,
 
-    name_to_id: HashMap<String, i32>,
+    name_to_id: HashMap<String, FieldId>,
     // `None` marks a lower-cased name that resolves to more than one field.
-    lowercase_name_to_id: HashMap<String, Option<i32>>,
-    id_to_name: HashMap<i32, String>,
+    lowercase_name_to_id: HashMap<String, Option<FieldId>>,
+    id_to_name: HashMap<FieldId, String>,
 
-    field_id_to_accessor: HashMap<i32, Arc<StructAccessor>>,
+    field_id_to_accessor: HashMap<FieldId, Arc<StructAccessor>>,
 }
 
 impl PartialEq for Schema {
@@ -96,9 +96,9 @@ impl Eq for Schema {}
 pub struct SchemaBuilder {
     schema_id: i32,
     fields: Vec<NestedFieldRef>,
-    alias_to_id: BiHashMap<String, i32>,
-    identifier_field_ids: HashSet<i32>,
-    reassign_field_ids_from: Option<i32>,
+    alias_to_id: BiHashMap<String, FieldId>,
+    identifier_field_ids: HashSet<FieldId>,
+    reassign_field_ids_from: Option<FieldId>,
 }
 
 impl SchemaBuilder {
@@ -112,7 +112,7 @@ impl SchemaBuilder {
     /// Reassignment starts from the field-id specified in `start_from` (inclusive).
     ///
     /// All specified aliases and identifier fields will be updated to the new field-ids.
-    pub(crate) fn with_reassigned_field_ids(mut self, start_from: i32) -> Self {
+    pub(crate) fn with_reassigned_field_ids(mut self, start_from: FieldId) -> Self {
         self.reassign_field_ids_from = Some(start_from);
         self
     }
@@ -124,13 +124,13 @@ impl SchemaBuilder {
     }
 
     /// Set identifier field ids.
-    pub fn with_identifier_field_ids(mut self, ids: impl IntoIterator<Item = i32>) -> Self {
+    pub fn with_identifier_field_ids(mut self, ids: impl IntoIterator<Item = FieldId>) -> Self {
         self.identifier_field_ids.extend(ids);
         self
     }
 
     /// Set alias to filed id mapping.
-    pub fn with_alias(mut self, alias_to_id: BiHashMap<String, i32>) -> Self {
+    pub fn with_alias(mut self, alias_to_id: BiHashMap<String, FieldId>) -> Self {
         self.alias_to_id = alias_to_id;
         self
     }
@@ -197,7 +197,7 @@ impl SchemaBuilder {
         Ok(schema)
     }
 
-    fn build_accessors(&self) -> HashMap<i32, Arc<StructAccessor>> {
+    fn build_accessors(&self) -> HashMap<FieldId, Arc<StructAccessor>> {
         let mut map = HashMap::new();
 
         for (pos, field) in self.fields.iter().enumerate() {
@@ -224,7 +224,7 @@ impl SchemaBuilder {
         map
     }
 
-    fn build_accessors_nested(fields: &[NestedFieldRef]) -> Vec<(i32, Box<StructAccessor>)> {
+    fn build_accessors_nested(fields: &[NestedFieldRef]) -> Vec<(FieldId, Box<StructAccessor>)> {
         let mut results = vec![];
         for (pos, field) in fields.iter().enumerate() {
             match field.field_type.as_ref() {
@@ -259,8 +259,8 @@ impl SchemaBuilder {
     /// - A nested field cannot be used as an identifier field if it is nested in an optional struct, to avoid null values in identifiers.
     fn validate_identifier_ids(
         r#struct: &StructType,
-        id_to_field: &HashMap<i32, NestedFieldRef>,
-        identifier_field_ids: impl Iterator<Item = i32>,
+        id_to_field: &HashMap<FieldId, NestedFieldRef>,
+        identifier_field_ids: impl Iterator<Item = FieldId>,
     ) -> Result<()> {
         let id_to_parent = index_parents(r#struct)?;
         for identifier_field_id in identifier_field_ids {
@@ -336,7 +336,7 @@ impl Schema {
     }
 
     /// Get field by field id.
-    pub fn field_by_id(&self, field_id: i32) -> Option<&NestedFieldRef> {
+    pub fn field_by_id(&self, field_id: FieldId) -> Option<&NestedFieldRef> {
         self.id_to_field.get(&field_id)
     }
 
@@ -401,7 +401,7 @@ impl Schema {
 
     /// Returns the highest field ID assigned in this schema.
     #[inline]
-    pub fn highest_field_id(&self) -> i32 {
+    pub fn highest_field_id(&self) -> FieldId {
         self.highest_field_id
     }
 
@@ -419,22 +419,22 @@ impl Schema {
 
     /// Returns the IDs of the fields.
     #[inline]
-    pub fn identifier_field_ids(&self) -> impl ExactSizeIterator<Item = i32> + '_ {
+    pub fn identifier_field_ids(&self) -> impl ExactSizeIterator<Item = FieldId> + '_ {
         self.identifier_field_ids.iter().copied()
     }
 
     /// Get field id by full name.
-    pub fn field_id_by_name(&self, name: &str) -> Option<i32> {
+    pub fn field_id_by_name(&self, name: &str) -> Option<FieldId> {
         self.name_to_id.get(name).copied()
     }
 
     /// Get full name by field id.
-    pub fn name_by_field_id(&self, field_id: i32) -> Option<&str> {
+    pub fn name_by_field_id(&self, field_id: FieldId) -> Option<&str> {
         self.id_to_name.get(&field_id).map(String::as_str)
     }
 
     /// Get an accessor for retrieving data in a struct
-    pub fn accessor_by_field_id(&self, field_id: i32) -> Option<Arc<StructAccessor>> {
+    pub fn accessor_by_field_id(&self, field_id: FieldId) -> Option<Arc<StructAccessor>> {
         self.field_id_to_accessor.get(&field_id).cloned()
     }
 
@@ -452,12 +452,12 @@ impl Schema {
     }
 
     /// Return A HashMap matching field ids to field names.
-    pub fn field_id_to_name_map(&self) -> &HashMap<i32, String> {
+    pub fn field_id_to_name_map(&self) -> &HashMap<FieldId, String> {
         &self.id_to_name
     }
 
     /// Return a hashmap matching field ids to nested fields.
-    pub fn field_id_to_fields(&self) -> &HashMap<i32, NestedFieldRef> {
+    pub fn field_id_to_fields(&self) -> &HashMap<FieldId, NestedFieldRef> {
         &self.id_to_field
     }
 
@@ -485,7 +485,7 @@ impl Schema {
     ///   checked, as it only affects newly written rows (read identically at any version).
     pub fn check_format_compatibility(&self, format_version: FormatVersion) -> Result<()> {
         // (field id, message); sorted by id below for a deterministic error.
-        let mut problems: Vec<(i32, String)> = Vec::new();
+        let mut problems: Vec<(FieldId, String)> = Vec::new();
 
         // `id_to_field` is flattened, so checking each field by its own type keeps the
         // blame on the offending leaf, not its container (mirrors Java's `lazyIdToField`).
@@ -567,7 +567,7 @@ mod tests {
     };
     use crate::spec::schema::Schema;
     use crate::spec::values::Map as MapValue;
-    use crate::spec::{Datum, Literal};
+    use crate::spec::{Datum, FieldId, Literal};
 
     #[test]
     fn test_check_format_compatibility() {
@@ -1138,7 +1138,7 @@ table {
 
     #[test]
     fn test_schema_find_nested() {
-        let expected_id_to_field: HashMap<i32, NestedField> = HashMap::from([
+        let expected_id_to_field: HashMap<FieldId, NestedField> = HashMap::from([
             (
                 1,
                 NestedField::optional(1, "foo", Primitive(PrimitiveType::String)),

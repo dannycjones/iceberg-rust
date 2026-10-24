@@ -27,7 +27,7 @@ use typed_builder::TypedBuilder;
 
 use super::transform::Transform;
 use crate::error::Result;
-use crate::spec::{PrimitiveType, Schema, Type};
+use crate::spec::{FieldId, PrimitiveType, Schema, Type};
 use crate::{Error, ErrorKind};
 
 /// Reference to [`SortOrder`].
@@ -77,7 +77,7 @@ impl fmt::Display for NullOrder {
 /// Entry for every column that is to be sorted
 pub struct SortField {
     /// A source column id from the table’s schema
-    pub source_id: i32,
+    pub source_id: FieldId,
     /// A transform that is used to produce values to be sorted on from the source column.
     pub transform: Transform,
     /// A sort direction, that can only be either asc or desc
