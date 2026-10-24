@@ -34,15 +34,15 @@ use crate::expr::BoundPredicate;
 use crate::expr::visitors::bound_predicate_visitor::visit;
 use crate::expr::visitors::page_index_evaluator::PageIndexEvaluator;
 use crate::expr::visitors::row_group_metrics_evaluator::RowGroupMetricsEvaluator;
-use crate::spec::Schema;
+use crate::spec::{FieldId, Schema};
 use crate::{Error, ErrorKind};
 
 impl ArrowReader {
     pub(super) fn get_row_filter(
         predicates: &BoundPredicate,
         parquet_schema: &SchemaDescriptor,
-        iceberg_field_ids: &HashSet<i32>,
-        field_id_map: &HashMap<i32, usize>,
+        iceberg_field_ids: &HashSet<FieldId>,
+        field_id_map: &HashMap<FieldId, usize>,
     ) -> Result<RowFilter> {
         // Collect Parquet column indices from field ids.
         // If the field id is not found in Parquet schema, it will be ignored due to schema evolution.
@@ -70,7 +70,7 @@ impl ArrowReader {
     pub(super) fn get_selected_row_group_indices(
         predicate: &BoundPredicate,
         parquet_metadata: &Arc<ParquetMetaData>,
-        field_id_map: &HashMap<i32, usize>,
+        field_id_map: &HashMap<FieldId, usize>,
         snapshot_schema: &Schema,
         candidate_row_groups: &[usize],
     ) -> Result<Vec<usize>> {
@@ -113,7 +113,7 @@ impl ArrowReader {
         predicate: &BoundPredicate,
         parquet_metadata: &Arc<ParquetMetaData>,
         selected_row_groups: &Option<Vec<usize>>,
-        field_id_map: &HashMap<i32, usize>,
+        field_id_map: &HashMap<FieldId, usize>,
         snapshot_schema: &Schema,
     ) -> Result<Option<RowSelection>> {
         let Some(column_index) = parquet_metadata.column_index() else {
@@ -247,7 +247,8 @@ mod tests {
     use crate::io::FileIO;
     use crate::scan::{FileScanTask, FileScanTaskDeleteFile, FileScanTaskStream};
     use crate::spec::{
-        DataContentType, DataFileFormat, Datum, NestedField, PrimitiveType, Schema, SchemaRef, Type,
+        DataContentType, DataFileFormat, Datum, FieldId, NestedField, PrimitiveType, Schema,
+        SchemaRef, Type,
     };
 
     async fn test_perform_read(
@@ -939,7 +940,7 @@ mod tests {
             .unwrap()
     }
 
-    fn field_id_map() -> HashMap<i32, usize> {
+    fn field_id_map() -> HashMap<FieldId, usize> {
         let mut m = HashMap::new();
         m.insert(1_i32, 0_usize);
         m
@@ -1542,7 +1543,7 @@ mod tests {
         i * STRIDE + group
     }
 
-    fn field_with_id(name: &str, ty: DataType, id: i32) -> Field {
+    fn field_with_id(name: &str, ty: DataType, id: FieldId) -> Field {
         Field::new(name, ty, false).with_metadata(HashMap::from([(
             PARQUET_FIELD_ID_META_KEY.to_string(),
             id.to_string(),
@@ -1576,7 +1577,7 @@ mod tests {
     async fn read_once(
         file_path: &str,
         schema: Arc<Schema>,
-        project_field_ids: Vec<i32>,
+        project_field_ids: Vec<FieldId>,
         predicate: Predicate,
         bloom_enabled: bool,
     ) -> (Vec<RecordBatch>, u64) {
@@ -1622,7 +1623,7 @@ mod tests {
         case: &str,
         file_path: &str,
         schema: Arc<Schema>,
-        project_field_ids: Vec<i32>,
+        project_field_ids: Vec<FieldId>,
         predicate: Predicate,
     ) -> (Option<RecordBatch>, u64, u64) {
         let (off, bytes_off) = read_once(

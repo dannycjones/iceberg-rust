@@ -43,7 +43,7 @@ use crate::encryption::{EncryptionManager, StandardKeyMetadata};
 use crate::error::invalid_data;
 use crate::io::{FileIO, FileWrite, OutputFile};
 use crate::spec::{
-    DataContentType, DataFileBuilder, DataFileFormat, Datum, ListType, Literal, MapType,
+    DataContentType, DataFileBuilder, DataFileFormat, Datum, FieldId, ListType, Literal, MapType,
     NestedFieldRef, PartitionSpec, PrimitiveType, Schema, SchemaRef, SchemaVisitor, Struct,
     StructType, TableMetadata, TableProperties, Type, VariantType, visit_schema,
 };
@@ -183,11 +183,11 @@ impl FileWriterBuilder for ParquetWriterBuilder {
 
 /// A mapping from Parquet column path names to internal field id
 struct IndexByParquetPathName {
-    name_to_id: HashMap<String, i32>,
+    name_to_id: HashMap<String, FieldId>,
 
     field_names: Vec<String>,
 
-    field_id: i32,
+    field_id: FieldId,
 }
 
 impl IndexByParquetPathName {
@@ -201,7 +201,7 @@ impl IndexByParquetPathName {
     }
 
     /// Retrieves the internal field ID
-    pub fn get(&self, name: &str) -> Option<&i32> {
+    pub fn get(&self, name: &str) -> Option<&FieldId> {
         self.name_to_id.get(name)
     }
 }
@@ -316,8 +316,8 @@ pub struct ParquetWriter {
 
 /// Used to aggregate min and max value of each column.
 struct MinMaxColAggregator {
-    lower_bounds: HashMap<i32, Datum>,
-    upper_bounds: HashMap<i32, Datum>,
+    lower_bounds: HashMap<FieldId, Datum>,
+    upper_bounds: HashMap<FieldId, Datum>,
     schema: SchemaRef,
 }
 
@@ -331,7 +331,7 @@ impl MinMaxColAggregator {
         }
     }
 
-    fn update_state_min(&mut self, field_id: i32, datum: Datum) {
+    fn update_state_min(&mut self, field_id: FieldId, datum: Datum) {
         self.lower_bounds
             .entry(field_id)
             .and_modify(|e| {
@@ -342,7 +342,7 @@ impl MinMaxColAggregator {
             .or_insert(datum);
     }
 
-    fn update_state_max(&mut self, field_id: i32, datum: Datum) {
+    fn update_state_max(&mut self, field_id: FieldId, datum: Datum) {
         self.upper_bounds
             .entry(field_id)
             .and_modify(|e| {
@@ -354,7 +354,7 @@ impl MinMaxColAggregator {
     }
 
     /// Update statistics
-    fn update(&mut self, field_id: i32, value: &Statistics) -> Result<()> {
+    fn update(&mut self, field_id: FieldId, value: &Statistics) -> Result<()> {
         let Some(ty) = self
             .schema
             .field_by_id(field_id)
@@ -397,7 +397,7 @@ impl MinMaxColAggregator {
     }
 
     /// Returns lower and upper bounds
-    fn produce(self) -> (HashMap<i32, Datum>, HashMap<i32, Datum>) {
+    fn produce(self) -> (HashMap<FieldId, Datum>, HashMap<FieldId, Datum>) {
         (self.lower_bounds, self.upper_bounds)
     }
 }
@@ -447,7 +447,7 @@ impl ParquetWriter {
         metadata: Arc<ParquetMetaData>,
         written_size: usize,
         file_path: String,
-        nan_value_counts: HashMap<i32, u64>,
+        nan_value_counts: HashMap<FieldId, u64>,
         key_metadata: Option<StandardKeyMetadata>,
     ) -> Result<DataFileBuilder> {
         let index_by_parquet_path = {
@@ -457,9 +457,9 @@ impl ParquetWriter {
         };
 
         let (column_sizes, value_counts, null_value_counts, (lower_bounds, upper_bounds)) = {
-            let mut per_col_size: HashMap<i32, u64> = HashMap::new();
-            let mut per_col_val_num: HashMap<i32, u64> = HashMap::new();
-            let mut per_col_null_val_num: HashMap<i32, u64> = HashMap::new();
+            let mut per_col_size: HashMap<FieldId, u64> = HashMap::new();
+            let mut per_col_val_num: HashMap<FieldId, u64> = HashMap::new();
+            let mut per_col_null_val_num: HashMap<FieldId, u64> = HashMap::new();
             let mut min_max_agg = MinMaxColAggregator::new(schema);
 
             for row_group in metadata.row_groups() {
@@ -528,8 +528,8 @@ impl ParquetWriter {
     #[allow(dead_code)]
     fn partition_value_from_bounds(
         table_spec: Arc<PartitionSpec>,
-        lower_bounds: &HashMap<i32, Datum>,
-        upper_bounds: &HashMap<i32, Datum>,
+        lower_bounds: &HashMap<FieldId, Datum>,
+        upper_bounds: &HashMap<FieldId, Datum>,
     ) -> Result<Struct> {
         let mut partition_literals: Vec<Option<Literal>> = Vec::new();
 

@@ -26,12 +26,12 @@ use parquet::file::statistics::Statistics;
 use crate::arrow::{get_parquet_stat_max_as_datum, get_parquet_stat_min_as_datum};
 use crate::expr::visitors::bound_predicate_visitor::{BoundPredicateVisitor, visit};
 use crate::expr::{BoundPredicate, BoundReference};
-use crate::spec::{Datum, PrimitiveLiteral, PrimitiveType, Schema};
+use crate::spec::{Datum, FieldId, PrimitiveLiteral, PrimitiveType, Schema};
 use crate::{Error, ErrorKind, Result};
 
 pub(crate) struct RowGroupMetricsEvaluator<'a> {
     row_group_metadata: &'a RowGroupMetaData,
-    iceberg_field_id_to_parquet_column_index: &'a HashMap<i32, usize>,
+    iceberg_field_id_to_parquet_column_index: &'a HashMap<FieldId, usize>,
     snapshot_schema: &'a Schema,
 }
 
@@ -42,7 +42,7 @@ const ROW_GROUP_CANT_MATCH: Result<bool> = Ok(false);
 impl<'a> RowGroupMetricsEvaluator<'a> {
     fn new(
         row_group_metadata: &'a RowGroupMetaData,
-        field_id_map: &'a HashMap<i32, usize>,
+        field_id_map: &'a HashMap<FieldId, usize>,
         snapshot_schema: &'a Schema,
     ) -> Self {
         Self {
@@ -59,7 +59,7 @@ impl<'a> RowGroupMetricsEvaluator<'a> {
     pub(crate) fn eval(
         filter: &'a BoundPredicate,
         row_group_metadata: &'a RowGroupMetaData,
-        field_id_map: &'a HashMap<i32, usize>,
+        field_id_map: &'a HashMap<FieldId, usize>,
         snapshot_schema: &'a Schema,
     ) -> Result<bool> {
         if row_group_metadata.num_rows() == 0 {
@@ -71,7 +71,7 @@ impl<'a> RowGroupMetricsEvaluator<'a> {
         visit(&mut evaluator, filter)
     }
 
-    fn stats_for_field_id(&self, field_id: i32) -> Option<&Statistics> {
+    fn stats_for_field_id(&self, field_id: FieldId) -> Option<&Statistics> {
         let parquet_column_index = *self
             .iceberg_field_id_to_parquet_column_index
             .get(&field_id)?;
@@ -80,7 +80,7 @@ impl<'a> RowGroupMetricsEvaluator<'a> {
             .statistics()
     }
 
-    fn null_count(&self, field_id: i32) -> Option<u64> {
+    fn null_count(&self, field_id: FieldId) -> Option<u64> {
         self.stats_for_field_id(field_id)?.null_count_opt()
     }
 
@@ -88,14 +88,14 @@ impl<'a> RowGroupMetricsEvaluator<'a> {
         self.row_group_metadata.num_rows() as u64
     }
 
-    fn contains_nulls_only(&self, field_id: i32) -> bool {
+    fn contains_nulls_only(&self, field_id: FieldId) -> bool {
         let null_count = self.null_count(field_id);
         let value_count = self.value_count();
 
         null_count == Some(value_count)
     }
 
-    fn may_contain_null(&self, field_id: i32) -> bool {
+    fn may_contain_null(&self, field_id: FieldId) -> bool {
         if let Some(null_count) = self.null_count(field_id) {
             null_count > 0
         } else {
@@ -105,7 +105,7 @@ impl<'a> RowGroupMetricsEvaluator<'a> {
 
     fn stats_and_type_for_field_id(
         &self,
-        field_id: i32,
+        field_id: FieldId,
     ) -> Result<Option<(&Statistics, PrimitiveType)>> {
         let Some(stats) = self.stats_for_field_id(field_id) else {
             // No statistics for column
@@ -135,7 +135,7 @@ impl<'a> RowGroupMetricsEvaluator<'a> {
         Ok(Some((stats, primitive_type.clone())))
     }
 
-    fn min_value(&self, field_id: i32) -> Result<Option<Datum>> {
+    fn min_value(&self, field_id: FieldId) -> Result<Option<Datum>> {
         let Some((stats, primitive_type)) = self.stats_and_type_for_field_id(field_id)? else {
             return Ok(None);
         };
@@ -143,7 +143,7 @@ impl<'a> RowGroupMetricsEvaluator<'a> {
         get_parquet_stat_min_as_datum(&primitive_type, stats)
     }
 
-    fn max_value(&self, field_id: i32) -> Result<Option<Datum>> {
+    fn max_value(&self, field_id: FieldId) -> Result<Option<Datum>> {
         let Some((stats, primitive_type)) = self.stats_and_type_for_field_id(field_id)? else {
             return Ok(None);
         };
@@ -557,7 +557,7 @@ mod tests {
 
     use super::RowGroupMetricsEvaluator;
     use crate::expr::{Bind, Predicate, Reference};
-    use crate::spec::{Datum, NestedField, PrimitiveType, Schema, Type};
+    use crate::spec::{Datum, FieldId, NestedField, PrimitiveType, Schema, Type};
     use crate::{ErrorKind, Result};
 
     #[test]
@@ -1970,7 +1970,7 @@ mod tests {
         Ok(())
     }
 
-    fn build_iceberg_schema_and_field_map() -> Result<(Arc<Schema>, HashMap<i32, usize>)> {
+    fn build_iceberg_schema_and_field_map() -> Result<(Arc<Schema>, HashMap<FieldId, usize>)> {
         let iceberg_schema = Schema::builder()
             .with_fields([
                 Arc::new(NestedField::new(

@@ -23,7 +23,7 @@ use arrow_schema::{DataType, Field, FieldRef, Fields, Schema, SchemaRef};
 
 use crate::arrow::schema::{schema_to_arrow_schema, try_get_field_id_from_metadata};
 use crate::error::{Result, invalid_data};
-use crate::spec::Schema as IcebergSchema;
+use crate::spec::{FieldId, Schema as IcebergSchema};
 use crate::{Error, ErrorKind};
 
 /// Help to project specific field from `RecordBatch`` according to the fields id.
@@ -46,7 +46,7 @@ impl RecordBatchProjector {
     /// iterate into the nested fields.
     pub(crate) fn new<F1, F2>(
         original_schema: SchemaRef,
-        field_ids: &[i32],
+        field_ids: &[FieldId],
         field_id_fetch_func: F1,
         searchable_field_func: F2,
     ) -> Result<Self>
@@ -89,7 +89,7 @@ impl RecordBatchProjector {
     /// * `target_field_ids` - The field IDs to project
     pub fn from_iceberg_schema(
         iceberg_schema: Arc<IcebergSchema>,
-        target_field_ids: &[i32],
+        target_field_ids: &[FieldId],
     ) -> Result<Self> {
         let arrow_schema_with_ids = Arc::new(schema_to_arrow_schema(&iceberg_schema)?);
 

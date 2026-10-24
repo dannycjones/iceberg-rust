@@ -24,7 +24,7 @@ use typed_builder::TypedBuilder;
 use crate::error::invalid_data;
 use crate::expr::BoundPredicate;
 use crate::spec::{
-    DataContentType, DataFileFormat, ManifestEntryRef, NameMapping, PartitionSpec, Schema,
+    DataContentType, DataFileFormat, FieldId, ManifestEntryRef, NameMapping, PartitionSpec, Schema,
     SchemaRef, SortOrderRef, Struct, StructType,
 };
 use crate::{Error, Result};
@@ -79,7 +79,7 @@ pub struct FileScanTask {
     /// The schema of the file to scan.
     schema: SchemaRef,
     /// The field ids to project.
-    project_field_ids: Vec<i32>,
+    project_field_ids: Vec<FieldId>,
     /// The predicate to filter.
     #[builder(default)]
     predicate: Option<BoundPredicate>,
@@ -204,7 +204,7 @@ impl FileScanTask {
     }
 
     /// Returns the project field id of this file scan task.
-    pub fn project_field_ids(&self) -> &[i32] {
+    pub fn project_field_ids(&self) -> &[FieldId] {
         &self.project_field_ids
     }
 
@@ -381,7 +381,7 @@ pub struct FileScanTaskDeleteFile {
 
     /// equality ids for equality deletes (null for anything other than equality-deletes)
     #[builder(default)]
-    equality_ids: Option<Vec<i32>>,
+    equality_ids: Option<Vec<FieldId>>,
 
     /// For a deletion vector, the location of the data file whose rows it deletes. Required for
     /// deletion vectors, and may also be set on a position delete file scoped to one data file.
@@ -438,7 +438,7 @@ mod _serde {
     use crate::error::invalid_data;
     use crate::expr::BoundPredicate;
     use crate::spec::{
-        DataContentType, DataFileFormat, Literal, NameMapping, PartitionSpec, RawLiteral,
+        DataContentType, DataFileFormat, FieldId, Literal, NameMapping, PartitionSpec, RawLiteral,
         SchemaRef, SortOrderRef, StructType, Type,
     };
     use crate::{Error, Result};
@@ -454,7 +454,7 @@ mod _serde {
         data_file_path: String,
         data_file_format: DataFileFormat,
         schema: SchemaRef,
-        project_field_ids: Vec<i32>,
+        project_field_ids: Vec<FieldId>,
         predicate: Option<BoundPredicate>,
         deletes: Vec<FileScanTaskDeleteFile>,
         #[serde(default)]
@@ -488,7 +488,7 @@ mod _serde {
         data_file_path: &'a str,
         data_file_format: DataFileFormat,
         schema: &'a SchemaRef,
-        project_field_ids: &'a [i32],
+        project_field_ids: &'a [FieldId],
         #[serde(skip_serializing_if = "Option::is_none")]
         predicate: Option<&'a BoundPredicate>,
         deletes: &'a [FileScanTaskDeleteFile],
@@ -616,7 +616,7 @@ mod _serde {
         file_type: DataContentType,
         file_format: DataFileFormat,
         partition_spec_id: i32,
-        equality_ids: Option<Vec<i32>>,
+        equality_ids: Option<Vec<FieldId>>,
         #[serde(default)]
         referenced_data_file: Option<String>,
         #[serde(default)]
@@ -677,7 +677,7 @@ impl FileScanTaskDeleteFile {
     }
 
     /// Returns the equality field ids for an equality delete file.
-    pub fn equality_ids(&self) -> Option<&[i32]> {
+    pub fn equality_ids(&self) -> Option<&[FieldId]> {
         self.equality_ids.as_deref()
     }
 

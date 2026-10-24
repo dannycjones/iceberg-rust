@@ -57,7 +57,7 @@ use crate::metadata_columns::{
     RESERVED_FIELD_ID_POS, RESERVED_FIELD_ID_ROW_ID, RESERVED_FIELD_ID_SPEC_ID, is_metadata_field,
 };
 use crate::scan::{ArrowRecordBatchStream, FileScanTask, FileScanTaskStream};
-use crate::spec::{Datum, PartitionSpec, Struct};
+use crate::spec::{Datum, FieldId, PartitionSpec, Struct};
 use crate::{Error, ErrorKind};
 
 impl ArrowReader {
@@ -112,7 +112,7 @@ impl ArrowReader {
 // these (including the empty projection, e.g. `COUNT(*)`) can be pruned to zero data
 // columns. Narrower than `is_metadata_field`, which also matches `_deleted` -- excluded here
 // because it has no synthesis handler.
-const PRUNABLE_METADATA_FIELDS: &[i32] = &[
+const PRUNABLE_METADATA_FIELDS: &[FieldId] = &[
     RESERVED_FIELD_ID_FILE,
     RESERVED_FIELD_ID_SPEC_ID,
     RESERVED_FIELD_ID_PARTITION,
@@ -278,7 +278,7 @@ impl FileScanTaskReader {
         let coalesce_row_id_leaf = phys_row_id_leaf.filter(|_| task.first_row_id().is_some());
 
         // Filter out metadata fields for Parquet projection (they don't exist in files)
-        let project_field_ids_without_metadata: Vec<i32> = task
+        let project_field_ids_without_metadata: Vec<FieldId> = task
             .project_field_ids()
             .iter()
             .filter(|&&id| !is_metadata_field(id))
@@ -709,11 +709,11 @@ impl FileScanTaskReader {
         predicate: &BoundPredicate,
         builder: &mut ParquetRecordBatchStreamBuilder<ArrowFileReader>,
         candidate_row_groups: &[usize],
-        field_id_map: &HashMap<i32, usize>,
+        field_id_map: &HashMap<FieldId, usize>,
     ) -> Result<Vec<usize>> {
         // Only collect field IDs from eq/in predicates — the only types
         // bloom filters can help with. Skip columns not in the parquet schema.
-        let bloom_filter_field_ids: Vec<i32> = collect_bloom_filter_field_ids(predicate)?
+        let bloom_filter_field_ids: Vec<FieldId> = collect_bloom_filter_field_ids(predicate)?
             .into_iter()
             .filter(|id| field_id_map.contains_key(id))
             .collect();
@@ -725,7 +725,7 @@ impl FileScanTaskReader {
         let mut result = Vec::with_capacity(candidate_row_groups.len());
 
         for &rg_idx in candidate_row_groups {
-            let mut bloom_filters: HashMap<i32, ColumnBloomFilter> = HashMap::new();
+            let mut bloom_filters: HashMap<FieldId, ColumnBloomFilter> = HashMap::new();
 
             for &field_id in &bloom_filter_field_ids {
                 let col_idx = field_id_map[&field_id];
@@ -878,7 +878,9 @@ mod tests {
         RESERVED_FIELD_ID_POS, RESERVED_FIELD_ID_ROW_ID,
     };
     use crate::scan::{FileScanTask, FileScanTaskDeleteFile, FileScanTaskStream};
-    use crate::spec::{DataFileFormat, NestedField, PrimitiveType, Schema, SchemaRef, Type};
+    use crate::spec::{
+        DataFileFormat, FieldId, NestedField, PrimitiveType, Schema, SchemaRef, Type,
+    };
 
     // INT96 encoding: [nanos_low_u32, nanos_high_u32, julian_day_u32]
     // Julian day 2_440_588 = Unix epoch (1970-01-01)
@@ -903,7 +905,7 @@ mod tests {
     async fn read_int96_batches(
         file_path: &str,
         schema: SchemaRef,
-        project_field_ids: Vec<i32>,
+        project_field_ids: Vec<FieldId>,
     ) -> Vec<RecordBatch> {
         let file_io = FileIO::new_with_fs();
         let reader = ArrowReaderBuilder::new(file_io, Runtime::current()).build();
@@ -1033,7 +1035,7 @@ mod tests {
     async fn assert_int96_read_matches(
         file_path: &str,
         schema: SchemaRef,
-        project_field_ids: Vec<i32>,
+        project_field_ids: Vec<FieldId>,
         expected_micros: &[i64],
     ) {
         use arrow_array::TimestampMicrosecondArray;
@@ -1824,7 +1826,7 @@ mod tests {
         let tmp_dir = TempDir::new().unwrap();
         let dir = tmp_dir.path().to_str().unwrap();
 
-        let lusn_only_task = |file_path: String, project_field_ids: Vec<i32>| {
+        let lusn_only_task = |file_path: String, project_field_ids: Vec<FieldId>| {
             FileScanTask::builder()
                 .with_file_size_in_bytes(std::fs::metadata(&file_path).unwrap().len())
                 .with_start(0)
@@ -1886,7 +1888,7 @@ mod tests {
         let unified_type = Arc::new(spec.partition_type(&schema).unwrap());
         let partition_data = Struct::from_iter(vec![Some(Literal::int(42))]);
 
-        let partition_task = |file_path: String, project_field_ids: Vec<i32>| {
+        let partition_task = |file_path: String, project_field_ids: Vec<FieldId>| {
             FileScanTask::builder()
                 .with_file_size_in_bytes(std::fs::metadata(&file_path).unwrap().len())
                 .with_start(0)
@@ -2233,7 +2235,7 @@ mod tests {
     fn row_id_task_with_predicate(
         file_path: String,
         first_row_id: Option<i64>,
-        extra_project_field_ids: Vec<i32>,
+        extra_project_field_ids: Vec<FieldId>,
         predicate: crate::expr::Predicate,
     ) -> FileScanTask {
         use crate::expr::Bind;
@@ -3304,7 +3306,7 @@ mod tests {
     fn metadata_projection_task(
         file_path: String,
         schema: SchemaRef,
-        project_field_ids: Vec<i32>,
+        project_field_ids: Vec<FieldId>,
     ) -> FileScanTask {
         metadata_projection_task_with_first_row_id(file_path, schema, project_field_ids, None)
     }
@@ -3312,7 +3314,7 @@ mod tests {
     fn metadata_projection_task_with_first_row_id(
         file_path: String,
         schema: SchemaRef,
-        project_field_ids: Vec<i32>,
+        project_field_ids: Vec<FieldId>,
         first_row_id: Option<i64>,
     ) -> FileScanTask {
         FileScanTask::builder()
@@ -3588,7 +3590,7 @@ mod tests {
             )
         };
 
-        let seq_task = |path: String, ids: Vec<i32>| {
+        let seq_task = |path: String, ids: Vec<FieldId>| {
             FileScanTask::builder()
                 .with_file_size_in_bytes(std::fs::metadata(&path).unwrap().len())
                 .with_start(0)
@@ -3663,7 +3665,7 @@ mod tests {
                 vec![Arc::new(Int64Array::from(vec![Some(5), None, Some(8)])) as ArrayRef],
             )
         };
-        let seq_task = |path: String, ids: Vec<i32>| {
+        let seq_task = |path: String, ids: Vec<FieldId>| {
             FileScanTask::builder()
                 .with_file_size_in_bytes(std::fs::metadata(&path).unwrap().len())
                 .with_start(0)
@@ -3722,7 +3724,7 @@ mod tests {
         // data columns are pruned; the row count is still 3 and the values all null.
         let tmp_dir = TempDir::new().unwrap();
         let dir = tmp_dir.path().to_str().unwrap();
-        let seq_task = |name: &str, ids: Vec<i32>| {
+        let seq_task = |name: &str, ids: Vec<FieldId>| {
             let file_path = write_parquet_with_wide_column(
                 dir,
                 name,
@@ -3832,7 +3834,7 @@ mod tests {
                 .unwrap(),
         );
 
-        let spec_id_task = |file_path: String, project_field_ids: Vec<i32>| {
+        let spec_id_task = |file_path: String, project_field_ids: Vec<FieldId>| {
             FileScanTask::builder()
                 .with_file_size_in_bytes(std::fs::metadata(&file_path).unwrap().len())
                 .with_start(0)

@@ -26,7 +26,7 @@ use crate::arrow::record_batch_transformer::RecordBatchTransformerBuilder;
 use crate::arrow::scan_metrics::ScanMetrics;
 use crate::io::FileIO;
 use crate::scan::{ArrowRecordBatchStream, FileScanTaskDeleteFile};
-use crate::spec::{Schema, SchemaRef};
+use crate::spec::{FieldId, Schema, SchemaRef};
 use crate::{Error, ErrorKind, Result};
 
 /// Delete File Loader
@@ -100,7 +100,7 @@ impl BasicDeleteFileLoader {
     pub(crate) async fn evolve_schema(
         record_batch_stream: ArrowRecordBatchStream,
         target_schema: Arc<Schema>,
-        equality_ids: &[i32],
+        equality_ids: &[FieldId],
     ) -> Result<ArrowRecordBatchStream> {
         let mut record_batch_transformer =
             RecordBatchTransformerBuilder::new(target_schema.clone(), equality_ids).build();

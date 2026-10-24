@@ -46,9 +46,10 @@ use crate::error::invalid_data;
 use crate::io::StorageFactory;
 use crate::runtime::Runtime;
 use crate::spec::{
-    EncryptedKey, FormatVersion, PartitionFieldId, PartitionStatisticsFile, Schema, SchemaId,
-    Snapshot, SnapshotReference, SortOrder, StatisticsFile, TableMetadata, TableMetadataBuilder,
-    UnboundPartitionSpec, ViewFormatVersion, ViewRepresentations, ViewVersion,
+    EncryptedKey, FieldId, FormatVersion, PartitionFieldId, PartitionStatisticsFile, Schema,
+    SchemaId, Snapshot, SnapshotReference, SortOrder, StatisticsFile, TableMetadata,
+    TableMetadataBuilder, UnboundPartitionSpec, ViewFormatVersion, ViewRepresentations,
+    ViewVersion,
 };
 use crate::table::Table;
 use crate::{Error, ErrorKind, Result};
@@ -464,7 +465,7 @@ pub enum TableRequirement {
     LastAssignedFieldIdMatch {
         /// The last assigned field id of the table to assert.
         #[serde(rename = "last-assigned-field-id")]
-        last_assigned_field_id: i32,
+        last_assigned_field_id: FieldId,
     },
     /// The table's current schema id must match the requirement.
     #[serde(rename = "assert-current-schema-id")]
@@ -1001,7 +1002,7 @@ pub enum ViewUpdate {
         /// The schema to add.
         schema: Schema,
         /// The last column id of the view.
-        last_column_id: Option<i32>,
+        last_column_id: Option<FieldId>,
     },
     /// Set view's current schema
     #[serde(rename_all = "kebab-case")]

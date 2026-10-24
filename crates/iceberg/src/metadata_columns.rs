@@ -26,44 +26,44 @@ use std::sync::Arc;
 
 use once_cell::sync::Lazy;
 
-use crate::spec::{NestedField, NestedFieldRef, PrimitiveType, Type};
+use crate::spec::{FieldId, NestedField, NestedFieldRef, PrimitiveType, Type};
 use crate::{Error, ErrorKind, Result};
 
 /// Reserved field ID for the file path (_file) column per Iceberg spec
-pub const RESERVED_FIELD_ID_FILE: i32 = i32::MAX - 1;
+pub const RESERVED_FIELD_ID_FILE: FieldId = i32::MAX - 1;
 
 /// Reserved field ID for the position (_pos) column per Iceberg spec
-pub const RESERVED_FIELD_ID_POS: i32 = i32::MAX - 2;
+pub const RESERVED_FIELD_ID_POS: FieldId = i32::MAX - 2;
 
 /// Reserved field ID for the deleted (_deleted) column per Iceberg spec
-pub const RESERVED_FIELD_ID_DELETED: i32 = i32::MAX - 3;
+pub const RESERVED_FIELD_ID_DELETED: FieldId = i32::MAX - 3;
 
 /// Reserved field ID for the spec ID (_spec_id) column per Iceberg spec
-pub const RESERVED_FIELD_ID_SPEC_ID: i32 = i32::MAX - 4;
+pub const RESERVED_FIELD_ID_SPEC_ID: FieldId = i32::MAX - 4;
 
 /// Reserved field ID for the partition (_partition) column per Iceberg spec
-pub const RESERVED_FIELD_ID_PARTITION: i32 = i32::MAX - 5;
+pub const RESERVED_FIELD_ID_PARTITION: FieldId = i32::MAX - 5;
 
 /// Reserved field ID for the file path in position delete files
-pub const RESERVED_FIELD_ID_DELETE_FILE_PATH: i32 = i32::MAX - 101;
+pub const RESERVED_FIELD_ID_DELETE_FILE_PATH: FieldId = i32::MAX - 101;
 
 /// Reserved field ID for the position in position delete files
-pub const RESERVED_FIELD_ID_DELETE_FILE_POS: i32 = i32::MAX - 102;
+pub const RESERVED_FIELD_ID_DELETE_FILE_POS: FieldId = i32::MAX - 102;
 
 /// Reserved field ID for the change type (_change_type) column per Iceberg spec
-pub const RESERVED_FIELD_ID_CHANGE_TYPE: i32 = i32::MAX - 104;
+pub const RESERVED_FIELD_ID_CHANGE_TYPE: FieldId = i32::MAX - 104;
 
 /// Reserved field ID for the change ordinal (_change_ordinal) column per Iceberg spec
-pub const RESERVED_FIELD_ID_CHANGE_ORDINAL: i32 = i32::MAX - 105;
+pub const RESERVED_FIELD_ID_CHANGE_ORDINAL: FieldId = i32::MAX - 105;
 
 /// Reserved field ID for the commit snapshot ID (_commit_snapshot_id) column per Iceberg spec
-pub const RESERVED_FIELD_ID_COMMIT_SNAPSHOT_ID: i32 = i32::MAX - 106;
+pub const RESERVED_FIELD_ID_COMMIT_SNAPSHOT_ID: FieldId = i32::MAX - 106;
 
 /// Reserved field ID for the row ID (_row_id) column per Iceberg spec
-pub const RESERVED_FIELD_ID_ROW_ID: i32 = i32::MAX - 107;
+pub const RESERVED_FIELD_ID_ROW_ID: FieldId = i32::MAX - 107;
 
 /// Reserved field ID for the last updated sequence number (_last_updated_sequence_number) column per Iceberg spec
-pub const RESERVED_FIELD_ID_LAST_UPDATED_SEQUENCE_NUMBER: i32 = i32::MAX - 108;
+pub const RESERVED_FIELD_ID_LAST_UPDATED_SEQUENCE_NUMBER: FieldId = i32::MAX - 108;
 
 /// Reserved column name for the file path metadata column
 pub const RESERVED_COL_NAME_FILE: &str = "_file";
@@ -390,7 +390,7 @@ pub fn partition_field(partition_fields: Vec<NestedFieldRef>) -> NestedFieldRef 
 ///
 /// # Returns
 /// The Iceberg field definition for the metadata column, or an error if not a metadata field
-pub fn get_metadata_field(field_id: i32) -> Result<&'static NestedFieldRef> {
+pub fn get_metadata_field(field_id: FieldId) -> Result<&'static NestedFieldRef> {
     match field_id {
         RESERVED_FIELD_ID_FILE => Ok(file_field()),
         RESERVED_FIELD_ID_POS => Ok(pos_field()),
@@ -436,7 +436,7 @@ pub fn get_metadata_field(field_id: i32) -> Result<&'static NestedFieldRef> {
 ///
 /// # Returns
 /// The field ID of the metadata column, or an error if the column name is not recognized
-pub fn get_metadata_field_id(column_name: &str) -> Result<i32> {
+pub fn get_metadata_field_id(column_name: &str) -> Result<FieldId> {
     match column_name {
         RESERVED_COL_NAME_FILE => Ok(RESERVED_FIELD_ID_FILE),
         RESERVED_COL_NAME_POS => Ok(RESERVED_FIELD_ID_POS),
@@ -473,7 +473,7 @@ pub fn get_metadata_field_id(column_name: &str) -> Result<i32> {
 ///
 /// # Returns
 /// `true` if the field ID is a data-table metadata column, `false` otherwise
-pub fn is_metadata_field(field_id: i32) -> bool {
+pub fn is_metadata_field(field_id: FieldId) -> bool {
     matches!(
         field_id,
         RESERVED_FIELD_ID_FILE

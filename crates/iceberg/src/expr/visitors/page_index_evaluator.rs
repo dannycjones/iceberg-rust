@@ -29,7 +29,7 @@ use parquet::file::page_index::offset_index::OffsetIndexMetaData;
 use crate::expr::visitors::bound_predicate_visitor::{BoundPredicateVisitor, visit};
 use crate::expr::{BoundPredicate, BoundReference};
 use crate::spec::decimal_utils::i128_from_be_bytes;
-use crate::spec::{Datum, PrimitiveLiteral, PrimitiveType, Schema};
+use crate::spec::{Datum, FieldId, PrimitiveLiteral, PrimitiveType, Schema};
 use crate::{Error, ErrorKind, Result};
 
 type OffsetIndex = Vec<OffsetIndexMetaData>;
@@ -63,7 +63,7 @@ pub(crate) struct PageIndexEvaluator<'a> {
     column_index: &'a [ColumnIndexMetaData],
     offset_index: &'a OffsetIndex,
     row_group_metadata: &'a RowGroupMetaData,
-    iceberg_field_id_to_parquet_column_index: &'a HashMap<i32, usize>,
+    iceberg_field_id_to_parquet_column_index: &'a HashMap<FieldId, usize>,
     snapshot_schema: &'a Schema,
     row_count_cache: HashMap<usize, Vec<usize>>,
 }
@@ -73,7 +73,7 @@ impl<'a> PageIndexEvaluator<'a> {
         column_index: &'a [ColumnIndexMetaData],
         offset_index: &'a OffsetIndex,
         row_group_metadata: &'a RowGroupMetaData,
-        field_id_map: &'a HashMap<i32, usize>,
+        field_id_map: &'a HashMap<FieldId, usize>,
         snapshot_schema: &'a Schema,
     ) -> Self {
         Self {
@@ -96,7 +96,7 @@ impl<'a> PageIndexEvaluator<'a> {
         column_index: &'a [ColumnIndexMetaData],
         offset_index: &'a OffsetIndex,
         row_group_metadata: &'a RowGroupMetaData,
-        field_id_map: &'a HashMap<i32, usize>,
+        field_id_map: &'a HashMap<FieldId, usize>,
         snapshot_schema: &'a Schema,
     ) -> Result<Vec<RowSelector>> {
         if row_group_metadata.num_rows() == 0 {
@@ -130,7 +130,7 @@ impl<'a> PageIndexEvaluator<'a> {
 
     fn calc_row_selection<F>(
         &mut self,
-        field_id: i32,
+        field_id: FieldId,
         predicate: F,
         missing_col_behavior: MissingColBehavior,
     ) -> Result<RowSelection>
@@ -252,7 +252,7 @@ impl<'a> PageIndexEvaluator<'a> {
     }
 
     fn apply_predicate_to_column_index<F>(
-        field_id: i32,
+        field_id: FieldId,
         predicate: F,
         field_type: &PrimitiveType,
         type_length: Option<usize>,
@@ -989,7 +989,7 @@ mod tests {
     use super::PageIndexEvaluator;
     use crate::expr::{Bind, Reference};
     use crate::spec::decimal_utils::decimal_from_i128_with_scale;
-    use crate::spec::{Datum, NestedField, PrimitiveType, Schema, Type};
+    use crate::spec::{Datum, FieldId, NestedField, PrimitiveType, Schema, Type};
     use crate::{ErrorKind, Result};
 
     /// Helper function to create a test parquet file with page indexes
@@ -2321,7 +2321,7 @@ mod tests {
     fn build_decimal_schema_and_field_map(
         precision: u32,
         scale: u32,
-    ) -> Result<(Arc<Schema>, HashMap<i32, usize>)> {
+    ) -> Result<(Arc<Schema>, HashMap<FieldId, usize>)> {
         let iceberg_schema = Arc::new(
             Schema::builder()
                 .with_fields([Arc::new(NestedField::new(
@@ -2336,7 +2336,7 @@ mod tests {
         Ok((iceberg_schema, HashMap::from_iter([(1, 0)])))
     }
 
-    fn build_iceberg_schema_and_field_map() -> Result<(Arc<Schema>, HashMap<i32, usize>)> {
+    fn build_iceberg_schema_and_field_map() -> Result<(Arc<Schema>, HashMap<FieldId, usize>)> {
         let iceberg_schema = Schema::builder()
             .with_fields([
                 Arc::new(NestedField::new(

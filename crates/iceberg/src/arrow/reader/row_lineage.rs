@@ -36,6 +36,7 @@ use crate::error::invalid_data;
 use crate::metadata_columns::{
     RESERVED_COL_NAME_ROW_ID, RESERVED_FIELD_ID_POS, RESERVED_FIELD_ID_ROW_ID,
 };
+use crate::spec::FieldId;
 use crate::{Error, ErrorKind, Result};
 
 /// Appends the synthesized `_row_id` column to `batch`.
@@ -93,7 +94,7 @@ pub(crate) fn synthesize_row_id_column(
 }
 
 /// Returns the batch column tagged with `field_id` (via `PARQUET_FIELD_ID_META_KEY`), if any.
-fn column_by_field_id(batch: &RecordBatch, field_id: i32) -> Option<&ArrayRef> {
+fn column_by_field_id(batch: &RecordBatch, field_id: FieldId) -> Option<&ArrayRef> {
     batch
         .schema()
         .fields()
@@ -102,7 +103,7 @@ fn column_by_field_id(batch: &RecordBatch, field_id: i32) -> Option<&ArrayRef> {
         .map(|idx| batch.column(idx))
 }
 
-fn field_id_of(field: &Field) -> Option<i32> {
+fn field_id_of(field: &Field) -> Option<FieldId> {
     field
         .metadata()
         .get(PARQUET_FIELD_ID_META_KEY)
@@ -149,7 +150,7 @@ mod tests {
     use super::*;
     use crate::metadata_columns::RESERVED_COL_NAME_POS;
 
-    fn field_with_id(name: &str, dt: DataType, id: i32) -> Arc<Field> {
+    fn field_with_id(name: &str, dt: DataType, id: FieldId) -> Arc<Field> {
         Arc::new(
             Field::new(name, dt, true)
                 .with_metadata([(PARQUET_FIELD_ID_META_KEY.to_string(), id.to_string())].into()),

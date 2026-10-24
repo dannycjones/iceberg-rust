@@ -24,6 +24,7 @@ use crate::Result;
 use crate::compression::CompressionCodec;
 use crate::error::invalid_data;
 use crate::io::FileRead;
+use crate::spec::FieldId;
 
 /// Human-readable identification of the application writing the file, along with its version.
 /// Example: "Trino version 381"
@@ -35,7 +36,7 @@ pub const CREATED_BY_PROPERTY: &str = "created-by";
 #[serde(rename_all = "kebab-case")]
 pub struct BlobMetadata {
     pub(crate) r#type: String,
-    pub(crate) fields: Vec<i32>,
+    pub(crate) fields: Vec<FieldId>,
     pub(crate) snapshot_id: i64,
     pub(crate) sequence_number: i64,
     pub(crate) offset: u64,
@@ -57,7 +58,7 @@ impl BlobMetadata {
 
     #[inline]
     /// List of field IDs the blob was computed for; the order of items is used to compute sketches stored in the blob.
-    pub fn fields(&self) -> &[i32] {
+    pub fn fields(&self) -> &[FieldId] {
         &self.fields
     }
 

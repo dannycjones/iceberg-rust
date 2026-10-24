@@ -23,7 +23,7 @@ pub const iceberg::arrow::record_batch_partition_splitter::PROJECTED_PARTITION_V
 pub mod iceberg::arrow::record_batch_projector
 pub struct iceberg::arrow::record_batch_projector::RecordBatchProjector
 impl iceberg::arrow::record_batch_projector::RecordBatchProjector
-pub fn iceberg::arrow::record_batch_projector::RecordBatchProjector::from_iceberg_schema(iceberg_schema: alloc::sync::Arc<iceberg::spec::Schema>, target_field_ids: &[i32]) -> iceberg::Result<Self>
+pub fn iceberg::arrow::record_batch_projector::RecordBatchProjector::from_iceberg_schema(iceberg_schema: alloc::sync::Arc<iceberg::spec::Schema>, target_field_ids: &[iceberg::spec::FieldId]) -> iceberg::Result<Self>
 pub fn iceberg::arrow::record_batch_projector::RecordBatchProjector::project_column(&self, batch: &[arrow_array::array::ArrayRef]) -> iceberg::Result<alloc::vec::Vec<arrow_array::array::ArrayRef>>
 impl core::clone::Clone for iceberg::arrow::record_batch_projector::RecordBatchProjector
 pub fn iceberg::arrow::record_batch_projector::RecordBatchProjector::clone(&self) -> iceberg::arrow::record_batch_projector::RecordBatchProjector
@@ -1219,18 +1219,18 @@ pub const iceberg::metadata_columns::RESERVED_COL_NAME_PARTITION: &str
 pub const iceberg::metadata_columns::RESERVED_COL_NAME_POS: &str
 pub const iceberg::metadata_columns::RESERVED_COL_NAME_ROW_ID: &str
 pub const iceberg::metadata_columns::RESERVED_COL_NAME_SPEC_ID: &str
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_CHANGE_ORDINAL: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_CHANGE_TYPE: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_COMMIT_SNAPSHOT_ID: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_DELETED: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_DELETE_FILE_PATH: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_DELETE_FILE_POS: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_FILE: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_LAST_UPDATED_SEQUENCE_NUMBER: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_PARTITION: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_POS: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_ROW_ID: i32
-pub const iceberg::metadata_columns::RESERVED_FIELD_ID_SPEC_ID: i32
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_CHANGE_ORDINAL: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_CHANGE_TYPE: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_COMMIT_SNAPSHOT_ID: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_DELETED: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_DELETE_FILE_PATH: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_DELETE_FILE_POS: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_FILE: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_LAST_UPDATED_SEQUENCE_NUMBER: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_PARTITION: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_POS: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_ROW_ID: iceberg::spec::FieldId
+pub const iceberg::metadata_columns::RESERVED_FIELD_ID_SPEC_ID: iceberg::spec::FieldId
 pub fn iceberg::metadata_columns::change_ordinal_field() -> &'static iceberg::spec::NestedFieldRef
 pub fn iceberg::metadata_columns::change_type_field() -> &'static iceberg::spec::NestedFieldRef
 pub fn iceberg::metadata_columns::commit_snapshot_id_field() -> &'static iceberg::spec::NestedFieldRef
@@ -1238,10 +1238,10 @@ pub fn iceberg::metadata_columns::delete_file_path_field() -> &'static iceberg::
 pub fn iceberg::metadata_columns::delete_file_pos_field() -> &'static iceberg::spec::NestedFieldRef
 pub fn iceberg::metadata_columns::deleted_field() -> &'static iceberg::spec::NestedFieldRef
 pub fn iceberg::metadata_columns::file_field() -> &'static iceberg::spec::NestedFieldRef
-pub fn iceberg::metadata_columns::get_metadata_field(field_id: i32) -> iceberg::Result<&'static iceberg::spec::NestedFieldRef>
-pub fn iceberg::metadata_columns::get_metadata_field_id(column_name: &str) -> iceberg::Result<i32>
+pub fn iceberg::metadata_columns::get_metadata_field(field_id: iceberg::spec::FieldId) -> iceberg::Result<&'static iceberg::spec::NestedFieldRef>
+pub fn iceberg::metadata_columns::get_metadata_field_id(column_name: &str) -> iceberg::Result<iceberg::spec::FieldId>
 pub fn iceberg::metadata_columns::is_metadata_column_name(column_name: &str) -> bool
-pub fn iceberg::metadata_columns::is_metadata_field(field_id: i32) -> bool
+pub fn iceberg::metadata_columns::is_metadata_field(field_id: iceberg::spec::FieldId) -> bool
 pub fn iceberg::metadata_columns::last_updated_sequence_number_field() -> &'static iceberg::spec::NestedFieldRef
 pub fn iceberg::metadata_columns::partition_field(partition_fields: alloc::vec::Vec<iceberg::spec::NestedFieldRef>) -> iceberg::spec::NestedFieldRef
 pub fn iceberg::metadata_columns::pos_field() -> &'static iceberg::spec::NestedFieldRef
@@ -1287,7 +1287,7 @@ pub struct iceberg::puffin::Blob
 impl iceberg::puffin::Blob
 pub fn iceberg::puffin::Blob::blob_type(&self) -> &str
 pub fn iceberg::puffin::Blob::data(&self) -> &[u8]
-pub fn iceberg::puffin::Blob::fields(&self) -> &[i32]
+pub fn iceberg::puffin::Blob::fields(&self) -> &[iceberg::spec::FieldId]
 pub fn iceberg::puffin::Blob::properties(&self) -> &std::collections::hash::map::HashMap<alloc::string::String, alloc::string::String>
 pub fn iceberg::puffin::Blob::sequence_number(&self) -> i64
 pub fn iceberg::puffin::Blob::snapshot_id(&self) -> i64
@@ -1304,7 +1304,7 @@ pub struct iceberg::puffin::BlobMetadata
 impl iceberg::puffin::BlobMetadata
 pub fn iceberg::puffin::BlobMetadata::blob_type(&self) -> &str
 pub fn iceberg::puffin::BlobMetadata::compression_codec(&self) -> iceberg::compression::CompressionCodec
-pub fn iceberg::puffin::BlobMetadata::fields(&self) -> &[i32]
+pub fn iceberg::puffin::BlobMetadata::fields(&self) -> &[iceberg::spec::FieldId]
 pub fn iceberg::puffin::BlobMetadata::length(&self) -> u64
 pub fn iceberg::puffin::BlobMetadata::offset(&self) -> u64
 pub fn iceberg::puffin::BlobMetadata::properties(&self) -> &std::collections::hash::map::HashMap<alloc::string::String, alloc::string::String>
@@ -1370,7 +1370,7 @@ pub fn iceberg::scan::FileScanTask::name_mapping(&self) -> core::option::Option<
 pub fn iceberg::scan::FileScanTask::partition(&self) -> core::option::Option<&iceberg::spec::Struct>
 pub fn iceberg::scan::FileScanTask::partition_spec(&self) -> core::option::Option<&alloc::sync::Arc<iceberg::spec::PartitionSpec>>
 pub fn iceberg::scan::FileScanTask::predicate(&self) -> core::option::Option<&iceberg::expr::BoundPredicate>
-pub fn iceberg::scan::FileScanTask::project_field_ids(&self) -> &[i32]
+pub fn iceberg::scan::FileScanTask::project_field_ids(&self) -> &[iceberg::spec::FieldId]
 pub fn iceberg::scan::FileScanTask::record_count(&self) -> core::option::Option<u64>
 pub fn iceberg::scan::FileScanTask::schema(&self) -> &iceberg::spec::Schema
 pub fn iceberg::scan::FileScanTask::schema_ref(&self) -> iceberg::spec::SchemaRef
@@ -1397,7 +1397,7 @@ pub struct iceberg::scan::FileScanTaskDeleteFile
 impl iceberg::scan::FileScanTaskDeleteFile
 pub fn iceberg::scan::FileScanTaskDeleteFile::content_offset(&self) -> core::option::Option<u64>
 pub fn iceberg::scan::FileScanTaskDeleteFile::content_size_in_bytes(&self) -> core::option::Option<u64>
-pub fn iceberg::scan::FileScanTaskDeleteFile::equality_ids(&self) -> core::option::Option<&[i32]>
+pub fn iceberg::scan::FileScanTaskDeleteFile::equality_ids(&self) -> core::option::Option<&[iceberg::spec::FieldId]>
 pub fn iceberg::scan::FileScanTaskDeleteFile::file_format(&self) -> iceberg::spec::DataFileFormat
 pub fn iceberg::scan::FileScanTaskDeleteFile::file_path(&self) -> &str
 pub fn iceberg::scan::FileScanTaskDeleteFile::file_size_in_bytes(&self) -> u64
@@ -3560,7 +3560,7 @@ impl<B: core::fmt::Debug + iceberg::writer::file_writer::FileWriterBuilder, L: c
 pub fn iceberg::writer::base_writer::equality_delete_writer::EqualityDeleteFileWriterBuilder<B, L, F>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 pub struct iceberg::writer::base_writer::equality_delete_writer::EqualityDeleteWriterConfig
 impl iceberg::writer::base_writer::equality_delete_writer::EqualityDeleteWriterConfig
-pub fn iceberg::writer::base_writer::equality_delete_writer::EqualityDeleteWriterConfig::new(equality_ids: alloc::vec::Vec<i32>, original_schema: iceberg::spec::SchemaRef) -> iceberg::Result<Self>
+pub fn iceberg::writer::base_writer::equality_delete_writer::EqualityDeleteWriterConfig::new(equality_ids: alloc::vec::Vec<iceberg::spec::FieldId>, original_schema: iceberg::spec::SchemaRef) -> iceberg::Result<Self>
 pub fn iceberg::writer::base_writer::equality_delete_writer::EqualityDeleteWriterConfig::projected_arrow_schema_ref(&self) -> &arrow_schema::schema::SchemaRef
 impl core::fmt::Debug for iceberg::writer::base_writer::equality_delete_writer::EqualityDeleteWriterConfig
 pub fn iceberg::writer::base_writer::equality_delete_writer::EqualityDeleteWriterConfig::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
@@ -3778,7 +3778,7 @@ pub iceberg::TableRequirement::DefaultSortOrderIdMatch::default_sort_order_id: i
 pub iceberg::TableRequirement::DefaultSpecIdMatch
 pub iceberg::TableRequirement::DefaultSpecIdMatch::default_spec_id: i32
 pub iceberg::TableRequirement::LastAssignedFieldIdMatch
-pub iceberg::TableRequirement::LastAssignedFieldIdMatch::last_assigned_field_id: i32
+pub iceberg::TableRequirement::LastAssignedFieldIdMatch::last_assigned_field_id: iceberg::spec::FieldId
 pub iceberg::TableRequirement::LastAssignedPartitionIdMatch
 pub iceberg::TableRequirement::LastAssignedPartitionIdMatch::last_assigned_partition_id: iceberg::spec::PartitionFieldId
 pub iceberg::TableRequirement::NotExist
@@ -3863,7 +3863,7 @@ impl<'de> serde_core::de::Deserialize<'de> for iceberg::TableUpdate
 pub fn iceberg::TableUpdate::deserialize<__D>(__deserializer: __D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 pub enum iceberg::ViewUpdate
 pub iceberg::ViewUpdate::AddSchema
-pub iceberg::ViewUpdate::AddSchema::last_column_id: core::option::Option<i32>
+pub iceberg::ViewUpdate::AddSchema::last_column_id: core::option::Option<iceberg::spec::FieldId>
 pub iceberg::ViewUpdate::AddSchema::schema: iceberg::spec::Schema
 pub iceberg::ViewUpdate::AddViewVersion
 pub iceberg::ViewUpdate::AddViewVersion::view_version: iceberg::spec::ViewVersion

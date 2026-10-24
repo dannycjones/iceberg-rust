@@ -28,7 +28,7 @@ use serde_json::{Number, Value};
 
 use crate::error::invalid_data;
 use crate::spec::{
-    ListType, MapType, NestedField, NestedFieldRef, PrimitiveType, Schema, SchemaVisitor,
+    FieldId, ListType, MapType, NestedField, NestedFieldRef, PrimitiveType, Schema, SchemaVisitor,
     StructType, Type, VariantType, visit_schema,
 };
 use crate::{Error, ErrorKind, Result, ensure_data_valid};
@@ -458,7 +458,7 @@ impl AvroSchemaToSchema {
     fn get_element_id_from_attributes(
         attributes: &BTreeMap<String, Value>,
         name: &str,
-    ) -> Result<i32> {
+    ) -> Result<FieldId> {
         attributes
             .get(name)
             .ok_or_else(|| invalid_data!("Can't convert avro array schema, missing element id."))?

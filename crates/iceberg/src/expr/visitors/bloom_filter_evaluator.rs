@@ -29,7 +29,7 @@ use crate::Result;
 use crate::expr::visitors::bound_predicate_visitor::{BoundPredicateVisitor, visit};
 use crate::expr::{BoundPredicate, BoundReference};
 use crate::spec::decimal_utils::decimal_to_fixed_length_bytes_exact;
-use crate::spec::{Datum, PrimitiveLiteral, PrimitiveType, Type};
+use crate::spec::{Datum, FieldId, PrimitiveLiteral, PrimitiveType, Type};
 
 const ROW_GROUP_MIGHT_MATCH: Result<bool> = Ok(true);
 const ROW_GROUP_CANT_MATCH: Result<bool> = Ok(false);
@@ -57,7 +57,7 @@ impl ColumnBloomFilter {
 
 pub(crate) struct BloomFilterEvaluator<'a> {
     /// Maps Iceberg field_id -> bloom filter for this row group
-    bloom_filters: &'a HashMap<i32, ColumnBloomFilter>,
+    bloom_filters: &'a HashMap<FieldId, ColumnBloomFilter>,
 }
 
 impl BloomFilterEvaluator<'_> {
@@ -66,7 +66,7 @@ impl BloomFilterEvaluator<'_> {
     /// `true` if it might match.
     pub(crate) fn eval(
         filter: &BoundPredicate,
-        bloom_filters: &HashMap<i32, ColumnBloomFilter>,
+        bloom_filters: &HashMap<FieldId, ColumnBloomFilter>,
     ) -> Result<bool> {
         if bloom_filters.is_empty() {
             return ROW_GROUP_MIGHT_MATCH;
@@ -100,7 +100,9 @@ impl BloomFilterEvaluator<'_> {
 /// a column chunk's min/max statistics already determine membership exactly, so a
 /// bloom filter cannot prune anything statistics did not, and reading one costs a
 /// round trip to learn nothing.
-pub(crate) fn collect_bloom_filter_field_ids(predicate: &BoundPredicate) -> Result<HashSet<i32>> {
+pub(crate) fn collect_bloom_filter_field_ids(
+    predicate: &BoundPredicate,
+) -> Result<HashSet<FieldId>> {
     visit(&mut BloomFilterFieldIdCollector, predicate)
 }
 
@@ -108,7 +110,7 @@ struct BloomFilterFieldIdCollector;
 
 /// Field IDs worth fetching a bloom filter for: none if probing the column could
 /// never prune.
-fn probeable_field_id(reference: &BoundReference) -> HashSet<i32> {
+fn probeable_field_id(reference: &BoundReference) -> HashSet<FieldId> {
     if matches!(
         reference.field().field_type.as_ref(),
         Type::Primitive(PrimitiveType::Boolean)
@@ -521,7 +523,7 @@ mod tests {
     use super::{BloomFilterEvaluator, ColumnBloomFilter, collect_bloom_filter_field_ids};
     use crate::expr::{Bind, BoundPredicate, Reference};
     use crate::spec::decimal_utils::decimal_to_fixed_length_bytes_exact;
-    use crate::spec::{Datum, NestedField, PrimitiveType, Schema, Type};
+    use crate::spec::{Datum, FieldId, NestedField, PrimitiveType, Schema, Type};
 
     fn create_test_schema() -> Schema {
         Schema::builder()
@@ -750,8 +752,8 @@ mod tests {
     // column per row group, so anything it reports that the evaluator cannot act
     // on is wasted I/O.
 
-    fn collected_ids(predicate: BoundPredicate) -> Vec<i32> {
-        let mut ids: Vec<i32> = collect_bloom_filter_field_ids(&predicate)
+    fn collected_ids(predicate: BoundPredicate) -> Vec<FieldId> {
+        let mut ids: Vec<FieldId> = collect_bloom_filter_field_ids(&predicate)
             .unwrap()
             .into_iter()
             .collect();
@@ -1309,7 +1311,7 @@ mod tests {
         mantissa: i128,
         file_type_length: usize,
         schema_precision: u32,
-    ) -> (Schema, HashMap<i32, ColumnBloomFilter>) {
+    ) -> (Schema, HashMap<FieldId, ColumnBloomFilter>) {
         let bytes = decimal_to_fixed_length_bytes_exact(mantissa, file_type_length).unwrap();
         let mut sbbf = Sbbf::new_with_ndv_fpp(10, 0.01).unwrap();
         sbbf.insert(&ByteArray::from(bytes));

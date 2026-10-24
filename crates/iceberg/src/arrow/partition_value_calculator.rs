@@ -29,7 +29,7 @@ use super::record_batch_projector::RecordBatchProjector;
 use super::type_to_arrow_type;
 use crate::Result;
 use crate::error::invalid_data;
-use crate::spec::{PartitionSpec, Schema, StructType, Type};
+use crate::spec::{FieldId, PartitionSpec, Schema, StructType, Type};
 use crate::transform::{BoxedTransformFunction, create_transform_function};
 
 /// Calculator for partition values in Iceberg tables.
@@ -77,7 +77,7 @@ impl PartitionValueCalculator {
             .collect::<Result<Vec<_>>>()?;
 
         // Extract source field IDs for projection
-        let source_field_ids: Vec<i32> = partition_spec
+        let source_field_ids: Vec<FieldId> = partition_spec
             .fields()
             .iter()
             .map(|pf| pf.source_id)

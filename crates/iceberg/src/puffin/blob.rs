@@ -19,6 +19,8 @@ use std::collections::HashMap;
 
 use typed_builder::TypedBuilder;
 
+use crate::spec::FieldId;
+
 /// A serialized form of a "compact" Theta sketch produced by the Apache DataSketches library.
 pub const APACHE_DATASKETCHES_THETA_V1: &str = "apache-datasketches-theta-v1";
 /// A serialized form of a deletion vector.
@@ -28,7 +30,7 @@ pub const DELETION_VECTOR_V1: &str = "deletion-vector-v1";
 #[derive(Debug, PartialEq, Clone, TypedBuilder)]
 pub struct Blob {
     pub(crate) r#type: String,
-    pub(crate) fields: Vec<i32>,
+    pub(crate) fields: Vec<FieldId>,
     pub(crate) snapshot_id: i64,
     pub(crate) sequence_number: i64,
     pub(crate) data: Vec<u8>,
@@ -44,7 +46,7 @@ impl Blob {
 
     #[inline]
     /// List of field IDs the blob was computed for; the order of items is used to compute sketches stored in the blob.
-    pub fn fields(&self) -> &[i32] {
+    pub fn fields(&self) -> &[FieldId] {
         &self.fields
     }
 

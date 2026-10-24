@@ -36,9 +36,9 @@ use crate::io::FileIO;
 use crate::runtime::Runtime;
 use crate::scan::{ArrowRecordBatchStream, FileScanTaskDeleteFile};
 use crate::spec::{
-    DataContentType, DataFileFormat, Datum, ListType, MapType, NestedField, NestedFieldRef,
-    PartnerAccessor, PrimitiveType, Schema, SchemaRef, SchemaWithPartnerVisitor, StructType, Type,
-    VariantType, visit_schema_with_partner,
+    DataContentType, DataFileFormat, Datum, FieldId, ListType, MapType, NestedField,
+    NestedFieldRef, PartnerAccessor, PrimitiveType, Schema, SchemaRef, SchemaWithPartnerVisitor,
+    StructType, Type, VariantType, visit_schema_with_partner,
 };
 use crate::{Error, ErrorKind, Result};
 
@@ -62,7 +62,7 @@ enum DeleteFileContext {
     },
     FreshEqDel {
         batch_stream: ArrowRecordBatchStream,
-        equality_ids: HashSet<i32>,
+        equality_ids: HashSet<FieldId>,
         sender: tokio::sync::oneshot::Sender<Predicate>,
     },
     // A V3 deletion vector: the raw deletion-vector-v1 blob bytes, the data file whose rows it
@@ -580,7 +580,7 @@ impl CachingDeleteFileLoader {
 
     async fn parse_equality_deletes_record_batch_stream(
         mut stream: ArrowRecordBatchStream,
-        equality_ids: HashSet<i32>,
+        equality_ids: HashSet<FieldId>,
     ) -> Result<Predicate> {
         let mut row_predicates = Vec::new();
         let mut batch_schema_iceberg: Option<Schema> = None;
@@ -660,12 +660,12 @@ impl CachingDeleteFileLoader {
 }
 
 struct EqDelColumnProcessor<'a> {
-    equality_ids: &'a HashSet<i32>,
+    equality_ids: &'a HashSet<FieldId>,
     collected_columns: Vec<(ArrayRef, String, Type)>,
 }
 
 impl<'a> EqDelColumnProcessor<'a> {
-    fn new(equality_ids: &'a HashSet<i32>) -> Self {
+    fn new(equality_ids: &'a HashSet<FieldId>) -> Self {
         Self {
             equality_ids,
             collected_columns: Vec::with_capacity(equality_ids.len()),

@@ -28,7 +28,7 @@ use parquet::arrow::PARQUET_FIELD_ID_META_KEY;
 use crate::arrow::record_batch_projector::RecordBatchProjector;
 use crate::arrow::schema_to_arrow_schema;
 use crate::error::invalid_data;
-use crate::spec::{DataFile, PartitionKey, Schema, SchemaRef};
+use crate::spec::{DataFile, FieldId, PartitionKey, Schema, SchemaRef};
 use crate::writer::file_writer::FileWriterBuilder;
 use crate::writer::file_writer::location_generator::{FileNameGenerator, LocationGenerator};
 use crate::writer::file_writer::rolling_writer::{RollingFileWriter, RollingFileWriterBuilder};
@@ -65,7 +65,7 @@ where
 #[derive(Debug)]
 pub struct EqualityDeleteWriterConfig {
     // Field ids used to determine row equality in equality delete files.
-    equality_ids: Vec<i32>,
+    equality_ids: Vec<FieldId>,
     // Projector used to project the data chunk into specific fields.
     projector: RecordBatchProjector,
 }
@@ -77,7 +77,7 @@ pub struct EqualityDeleteWriterConfig {
 /// intentionally stricter than the current Java reference implementation, which
 /// only guards against null/empty lists; catching duplicates and missing ids
 /// here produces clearer errors and avoids generating meaningless delete files.
-fn validate_equality_ids(equality_ids: &[i32], original_schema: &Schema) -> Result<()> {
+fn validate_equality_ids(equality_ids: &[FieldId], original_schema: &Schema) -> Result<()> {
     if equality_ids.is_empty() {
         return Err(invalid_data!(
             "Equality delete field ids must not be empty."
@@ -102,7 +102,7 @@ fn validate_equality_ids(equality_ids: &[i32], original_schema: &Schema) -> Resu
 
 impl EqualityDeleteWriterConfig {
     /// Create a new `EqualityDeleteWriterConfig` with equality ids.
-    pub fn new(equality_ids: Vec<i32>, original_schema: SchemaRef) -> Result<Self> {
+    pub fn new(equality_ids: Vec<FieldId>, original_schema: SchemaRef) -> Result<Self> {
         validate_equality_ids(&equality_ids, &original_schema)?;
 
         let original_arrow_schema = Arc::new(schema_to_arrow_schema(&original_schema)?);
@@ -176,7 +176,7 @@ pub struct EqualityDeleteFileWriter<
 > {
     inner: Option<RollingFileWriter<B, L, F>>,
     projector: RecordBatchProjector,
-    equality_ids: Vec<i32>,
+    equality_ids: Vec<FieldId>,
     partition_key: Option<PartitionKey>,
 }
 

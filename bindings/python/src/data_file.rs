@@ -17,7 +17,7 @@
 
 use std::collections::HashMap;
 
-use iceberg::spec::{DataFile, DataFileFormat, PrimitiveLiteral};
+use iceberg::spec::{DataFile, DataFileFormat, FieldId, PrimitiveLiteral};
 use pyo3::IntoPyObjectExt;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -102,27 +102,27 @@ impl PyDataFile {
     }
 
     #[getter]
-    fn column_sizes(&self) -> &HashMap<i32, u64> {
+    fn column_sizes(&self) -> &HashMap<FieldId, u64> {
         self.inner.column_sizes()
     }
 
     #[getter]
-    fn value_counts(&self) -> &HashMap<i32, u64> {
+    fn value_counts(&self) -> &HashMap<FieldId, u64> {
         self.inner.value_counts()
     }
 
     #[getter]
-    fn null_value_counts(&self) -> &HashMap<i32, u64> {
+    fn null_value_counts(&self) -> &HashMap<FieldId, u64> {
         self.inner.null_value_counts()
     }
 
     #[getter]
-    fn nan_value_counts(&self) -> &HashMap<i32, u64> {
+    fn nan_value_counts(&self) -> &HashMap<FieldId, u64> {
         self.inner.nan_value_counts()
     }
 
     #[getter]
-    fn upper_bounds(&self) -> PyResult<HashMap<i32, Vec<u8>>> {
+    fn upper_bounds(&self) -> PyResult<HashMap<FieldId, Vec<u8>>> {
         self.inner
             .upper_bounds()
             .iter()
@@ -131,7 +131,7 @@ impl PyDataFile {
     }
 
     #[getter]
-    fn lower_bounds(&self) -> PyResult<HashMap<i32, Vec<u8>>> {
+    fn lower_bounds(&self) -> PyResult<HashMap<FieldId, Vec<u8>>> {
         self.inner
             .lower_bounds()
             .iter()
@@ -150,7 +150,7 @@ impl PyDataFile {
     }
 
     #[getter]
-    fn equality_ids(&self) -> Option<Vec<i32>> {
+    fn equality_ids(&self) -> Option<Vec<FieldId>> {
         self.inner.equality_ids()
     }
 

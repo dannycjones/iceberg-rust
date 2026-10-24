@@ -22,6 +22,7 @@ use crate::Result;
 use crate::compression::CompressionCodec;
 use crate::io::{FileIO, InputFile};
 use crate::puffin::metadata::{BlobMetadata, CREATED_BY_PROPERTY, FileMetadata};
+use crate::spec::FieldId;
 
 const JAVA_TESTDATA: &str = "testdata/puffin/java-generated";
 const EMPTY_UNCOMPRESSED: &str = "empty-puffin-uncompressed.bin";
@@ -82,7 +83,7 @@ pub(crate) fn empty_footer_payload_bytes_length_bytes() -> [u8; 4] {
 }
 
 pub(crate) const METRIC_BLOB_0_TYPE: &str = "some-blob";
-pub(crate) const METRIC_BLOB_0_INPUT_FIELDS: [i32; 1] = [1];
+pub(crate) const METRIC_BLOB_0_INPUT_FIELDS: [FieldId; 1] = [1];
 pub(crate) const METRIC_BLOB_0_SNAPSHOT_ID: i64 = 2;
 pub(crate) const METRIC_BLOB_0_SEQUENCE_NUMBER: i64 = 1;
 pub(crate) const METRIC_BLOB_0_DATA: &str = "abcdefghi";
@@ -125,7 +126,7 @@ pub(crate) fn blob_0() -> Blob {
 }
 
 pub(crate) const METRIC_BLOB_1_TYPE: &str = "some-other-blob";
-pub(crate) const METRIC_BLOB_1_INPUT_FIELDS: [i32; 1] = [2];
+pub(crate) const METRIC_BLOB_1_INPUT_FIELDS: [FieldId; 1] = [2];
 pub(crate) const METRIC_BLOB_1_SNAPSHOT_ID: i64 = 2;
 pub(crate) const METRIC_BLOB_1_SEQUENCE_NUMBER: i64 = 1;
 pub(crate) const METRIC_BLOB_1_DATA: &str =

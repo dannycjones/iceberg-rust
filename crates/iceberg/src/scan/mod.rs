@@ -44,7 +44,9 @@ use crate::metadata_columns::{
     RESERVED_FIELD_ID_PARTITION, get_metadata_field_id, is_metadata_column_name,
 };
 use crate::runtime::Runtime;
-use crate::spec::{DataContentType, Schema, SchemaRef, SnapshotRef, SortOrderRef, StructType};
+use crate::spec::{
+    DataContentType, FieldId, Schema, SchemaRef, SnapshotRef, SortOrderRef, StructType,
+};
 use crate::table::Table;
 use crate::util::available_parallelism;
 use crate::util::snapshot::snapshot_id_as_of_time;
@@ -58,7 +60,7 @@ fn resolve_field_id(
     schema: &Schema,
     column_name: &str,
     case_sensitive: bool,
-) -> Result<Option<i32>> {
+) -> Result<Option<FieldId>> {
     if case_sensitive {
         Ok(schema.field_id_by_name(column_name))
     } else {
@@ -71,7 +73,7 @@ fn collect_scan_field_ids(
     schema: &Schema,
     column_names: Option<&[String]>,
     case_sensitive: bool,
-) -> Result<Vec<i32>> {
+) -> Result<Vec<FieldId>> {
     let Some(column_names) = column_names else {
         return Ok(schema.as_struct().fields().iter().map(|f| f.id).collect());
     };
@@ -118,7 +120,7 @@ fn bind_scan_predicate(
 fn projected_partition_type(
     table: &Table,
     schema: &Schema,
-    field_ids: &[i32],
+    field_ids: &[FieldId],
 ) -> Result<Option<Arc<StructType>>> {
     if !field_ids.contains(&RESERVED_FIELD_ID_PARTITION) {
         return Ok(None);

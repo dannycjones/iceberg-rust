@@ -146,8 +146,8 @@ mod test {
     use crate::Result;
     use crate::io::FileIO;
     use crate::spec::{
-        DataContentType, DataFileFormat, Literal, NestedField, PartitionKey, PartitionSpec,
-        PrimitiveType, Schema, Struct, Type,
+        DataContentType, DataFileFormat, FieldId, Literal, NestedField, PartitionKey,
+        PartitionSpec, PrimitiveType, Schema, Struct, Type,
     };
     use crate::writer::base_writer::data_file_writer::DataFileWriterBuilder;
     use crate::writer::file_writer::ParquetWriterBuilder;
@@ -220,7 +220,7 @@ mod test {
             ArrowReaderMetadata::load(&input_content, ArrowReaderOptions::default())
                 .expect("Failed to load Parquet metadata");
 
-        let field_ids: Vec<i32> = parquet_reader
+        let field_ids: Vec<FieldId> = parquet_reader
             .parquet_schema()
             .columns()
             .iter()
@@ -304,7 +304,7 @@ mod test {
         let parquet_reader =
             ArrowReaderMetadata::load(&input_content, ArrowReaderOptions::default())?;
 
-        let field_ids: Vec<i32> = parquet_reader
+        let field_ids: Vec<FieldId> = parquet_reader
             .parquet_schema()
             .columns()
             .iter()

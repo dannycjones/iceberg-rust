@@ -22,15 +22,15 @@ use async_trait::async_trait;
 use typed_builder::TypedBuilder;
 
 use crate::spec::{
-    ListType, Literal, MapType, NestedField, NestedFieldRef, SCHEMA_NAME_DELIMITER, Schema,
-    StructType, Type,
+    FieldId, ListType, Literal, MapType, NestedField, NestedFieldRef, SCHEMA_NAME_DELIMITER,
+    Schema, StructType, Type,
 };
 use crate::table::Table;
 use crate::transaction::action::{ActionCommit, StatelessAction};
 use crate::{Error, ErrorKind, Result, TableRequirement, TableUpdate};
 
 // Default ID for a new column. This will be re-assigned to a fresh ID at commit time.
-const DEFAULT_FIELD_ID: i32 = 0;
+const DEFAULT_FIELD_ID: FieldId = 0;
 
 /// Declarative specification for adding a column in an [`UpdateSchemaAction`].
 ///
@@ -161,7 +161,7 @@ impl UpdateSchemaAction {
 /// IDs rather than reassigning an existing schema. `ReassignFieldIds` cannot be used
 /// directly here because it rejects duplicate old IDs (all new fields share placeholder
 /// ID `DEFAULT_FIELD_ID`).
-fn assign_fresh_ids(field: &NestedField, next_id: &mut i32) -> NestedFieldRef {
+fn assign_fresh_ids(field: &NestedField, next_id: &mut FieldId) -> NestedFieldRef {
     *next_id += 1;
     let new_id = *next_id;
     let new_type = assign_fresh_ids_to_type(&field.field_type, next_id);
@@ -178,7 +178,7 @@ fn assign_fresh_ids(field: &NestedField, next_id: &mut i32) -> NestedFieldRef {
 }
 
 /// Recursively assign fresh field IDs to all nested fields within a `Type`.
-fn assign_fresh_ids_to_type(field_type: &Type, next_id: &mut i32) -> Type {
+fn assign_fresh_ids_to_type(field_type: &Type, next_id: &mut FieldId) -> Type {
     match field_type {
         Type::Primitive(_) => field_type.clone(),
         // Variant carries no nested fields, so there is nothing to reassign
@@ -221,7 +221,7 @@ fn assign_fresh_ids_to_type(field_type: &Type, next_id: &mut i32) -> Type {
 fn resolve_parent_target<'a>(
     base_schema: &'a Schema,
     parent: &str,
-) -> Result<(i32, &'a StructType)> {
+) -> Result<(FieldId, &'a StructType)> {
     base_schema
         .field_by_name(parent)
         .ok_or_else(|| {
@@ -261,9 +261,9 @@ fn resolve_parent_target<'a>(
 /// plus any additions keyed by `parent_id` (`None` represents the table root).
 fn rebuild_fields(
     fields: &[NestedFieldRef],
-    adds: &HashMap<Option<i32>, Vec<NestedFieldRef>>,
-    delete_ids: &HashSet<i32>,
-    parent_id: Option<i32>,
+    adds: &HashMap<Option<FieldId>, Vec<NestedFieldRef>>,
+    delete_ids: &HashSet<FieldId>,
+    parent_id: Option<FieldId>,
 ) -> Vec<NestedFieldRef> {
     fields
         .iter()
@@ -278,8 +278,8 @@ fn rebuild_fields(
 /// Fields whose IDs appear in `delete_ids` are filtered out at every struct level.
 fn rebuild_field(
     field: &NestedFieldRef,
-    adds: &HashMap<Option<i32>, Vec<NestedFieldRef>>,
-    delete_ids: &HashSet<i32>,
+    adds: &HashMap<Option<FieldId>, Vec<NestedFieldRef>>,
+    delete_ids: &HashSet<FieldId>,
 ) -> NestedFieldRef {
     match field.field_type.as_ref() {
         Type::Primitive(_) | Type::Variant(_) => field.clone(),
@@ -364,12 +364,12 @@ impl StatelessAction for UpdateSchemaAction {
                         }
                     })
             })
-            .collect::<Result<HashSet<i32>>>()?;
+            .collect::<Result<HashSet<FieldId>>>()?;
 
         // --- 2. Resolve parents, validate additions, assign IDs, and group by parent ID ---
         // We assign IDs inline (before grouping) to preserve the caller's insertion order,
         // since HashMap iteration order is non-deterministic.
-        let mut additions_by_parent: HashMap<Option<i32>, Vec<NestedFieldRef>> = HashMap::new();
+        let mut additions_by_parent: HashMap<Option<FieldId>, Vec<NestedFieldRef>> = HashMap::new();
 
         for add in &self.additions {
             let pending_field = add.to_nested_field();

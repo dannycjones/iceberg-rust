@@ -43,8 +43,8 @@ use crate::metadata_columns::{
     RESERVED_COL_NAME_PARTITION, RESERVED_FIELD_ID_PARTITION, get_metadata_field,
 };
 use crate::spec::{
-    Datum, Literal, PartitionSpec, PrimitiveLiteral, Schema as IcebergSchema, Struct, StructType,
-    Transform,
+    Datum, FieldId, Literal, PartitionSpec, PrimitiveLiteral, Schema as IcebergSchema, Struct,
+    StructType, Transform,
 };
 use crate::{Error, ErrorKind, Result};
 
@@ -53,7 +53,7 @@ fn field_with_id(
     name: impl Into<String>,
     data_type: DataType,
     nullable: bool,
-    field_id: i32,
+    field_id: FieldId,
 ) -> Field {
     Field::new(name, data_type, nullable).with_metadata(HashMap::from([(
         PARQUET_FIELD_ID_META_KEY.to_string(),
@@ -79,7 +79,7 @@ fn constants_map(
     partition_spec: &PartitionSpec,
     partition_data: &Struct,
     schema: &IcebergSchema,
-) -> Result<HashMap<i32, Datum>> {
+) -> Result<HashMap<FieldId, Datum>> {
     let mut constants = HashMap::new();
 
     for (pos, field) in partition_spec.fields().iter().enumerate() {
@@ -160,7 +160,7 @@ pub(crate) enum ColumnSource {
     // struct, and all-null metadata columns. The coalesce variant routes to
     // `Coalesce` instead. Resolved at apply time rather than baking the value here.
     ConstantLookup {
-        field_id: i32,
+        field_id: FieldId,
         target_type: DataType,
     },
 
@@ -181,7 +181,7 @@ pub(crate) enum ColumnSource {
     // so it matches the (run-end-encoded) type the constant and null paths
     // produce for the column.
     Coalesce {
-        field_id: i32,
+        field_id: FieldId,
         source_index: usize,
         target_type: DataType,
     },
@@ -237,7 +237,7 @@ impl PromotePlan {
         source: &DataType,
         target: &DataType,
         snapshot_schema: &IcebergSchema,
-        constant_fields: &HashMap<i32, ColumnConstant>,
+        constant_fields: &HashMap<FieldId, ColumnConstant>,
     ) -> Result<Self> {
         if source == target {
             return Ok(PromotePlan::PassThrough);
@@ -302,7 +302,7 @@ impl PromotePlan {
         source_fields: &Fields,
         target_fields: &Fields,
         snapshot_schema: &IcebergSchema,
-        constant_fields: &HashMap<i32, ColumnConstant>,
+        constant_fields: &HashMap<FieldId, ColumnConstant>,
     ) -> Result<Vec<ChildPlan>> {
         let mut source_by_id = HashMap::with_capacity(source_fields.len());
         for (idx, field) in source_fields.iter().enumerate() {
@@ -518,9 +518,9 @@ enum SchemaComparison {
 #[derive(Debug)]
 pub(crate) struct RecordBatchTransformerBuilder {
     snapshot_schema: Arc<IcebergSchema>,
-    projected_iceberg_field_ids: Vec<i32>,
-    constant_fields: HashMap<i32, ColumnConstant>,
-    virtual_fields: HashSet<i32>,
+    projected_iceberg_field_ids: Vec<FieldId>,
+    constant_fields: HashMap<FieldId, ColumnConstant>,
+    virtual_fields: HashSet<FieldId>,
 }
 
 /// How a metadata (or identity-partition) column's values are supplied.
@@ -585,7 +585,7 @@ impl StructConstant {
 impl RecordBatchTransformerBuilder {
     pub(crate) fn new(
         snapshot_schema: Arc<IcebergSchema>,
-        projected_iceberg_field_ids: &[i32],
+        projected_iceberg_field_ids: &[FieldId],
     ) -> Self {
         Self {
             snapshot_schema,
@@ -597,7 +597,7 @@ impl RecordBatchTransformerBuilder {
 
     /// Add a scalar constant value for a specific field ID.
     /// This is used for virtual/metadata fields like _file that have constant values per batch.
-    pub(crate) fn with_constant(mut self, field_id: i32, datum: Datum) -> Self {
+    pub(crate) fn with_constant(mut self, field_id: FieldId, datum: Datum) -> Self {
         self.constant_fields
             .insert(field_id, ColumnConstant::Scalar(datum));
         self
@@ -608,7 +608,7 @@ impl RecordBatchTransformerBuilder {
     /// Used when the file physically carries the column.
     pub(crate) fn with_coalesced_last_updated_seq_column(
         mut self,
-        field_id: i32,
+        field_id: FieldId,
         datum: Datum,
     ) -> Self {
         self.constant_fields
@@ -619,7 +619,7 @@ impl RecordBatchTransformerBuilder {
     /// Add an all-null metadata column for a specific field ID.
     /// Used for metadata columns that resolve to null (e.g.
     /// `_last_updated_sequence_number` when the file has a null `first_row_id`).
-    pub(crate) fn with_null_metadata_column(mut self, field_id: i32) -> Result<Self> {
+    pub(crate) fn with_null_metadata_column(mut self, field_id: FieldId) -> Result<Self> {
         let iceberg_field = get_metadata_field(field_id)?;
         let prim_type = iceberg_field
             .field_type
@@ -665,7 +665,7 @@ impl RecordBatchTransformerBuilder {
 
     /// Set virtual fields such as '_pos'. Caller must have registered a corresponding
     /// ArrowReaderOptions::with_virtual_columns call on the reader
-    pub(crate) fn with_virtual_field(mut self, field_id: i32) -> Self {
+    pub(crate) fn with_virtual_field(mut self, field_id: FieldId) -> Self {
         self.virtual_fields.insert(field_id);
         self
     }
@@ -723,14 +723,14 @@ impl RecordBatchTransformerBuilder {
 #[derive(Debug)]
 pub(crate) struct RecordBatchTransformer {
     snapshot_schema: Arc<IcebergSchema>,
-    projected_iceberg_field_ids: Vec<i32>,
+    projected_iceberg_field_ids: Vec<FieldId>,
     // Unified map of all per-file constant columns (metadata, identity partition, _partition struct).
-    constant_fields: HashMap<i32, ColumnConstant>,
+    constant_fields: HashMap<FieldId, ColumnConstant>,
 
     // Field IDs whose data is delivered by the source batch as an arrow-rs virtual column
     // (e.g. _pos via RowNumber). These fields bypass the snapshot-schema lookup and the
     // Iceberg projection rules (name mapping / initial-default / null)
-    virtual_fields: HashSet<i32>,
+    virtual_fields: HashSet<FieldId>,
 
     // BatchTransform gets lazily constructed based on the schema of
     // the first RecordBatch we receive from the file
@@ -791,9 +791,9 @@ impl RecordBatchTransformer {
     fn generate_batch_transform(
         source_schema: &ArrowSchemaRef,
         snapshot_schema: &IcebergSchema,
-        projected_iceberg_field_ids: &[i32],
-        constant_fields: &HashMap<i32, ColumnConstant>,
-        virtual_fields: &HashSet<i32>,
+        projected_iceberg_field_ids: &[FieldId],
+        constant_fields: &HashMap<FieldId, ColumnConstant>,
+        virtual_fields: &HashSet<FieldId>,
     ) -> Result<BatchTransform> {
         let mapped_unprojected_arrow_schema = Arc::new(schema_to_arrow_schema(snapshot_schema)?);
         let field_id_to_mapped_schema_map =
@@ -970,10 +970,10 @@ impl RecordBatchTransformer {
     fn generate_transform_operations(
         source_schema: &ArrowSchemaRef,
         snapshot_schema: &IcebergSchema,
-        projected_iceberg_field_ids: &[i32],
-        field_id_to_mapped_schema_map: HashMap<i32, (FieldRef, usize)>,
-        constant_fields: &HashMap<i32, ColumnConstant>,
-        virtual_fields: &HashSet<i32>,
+        projected_iceberg_field_ids: &[FieldId],
+        field_id_to_mapped_schema_map: HashMap<FieldId, (FieldRef, usize)>,
+        constant_fields: &HashMap<FieldId, ColumnConstant>,
+        virtual_fields: &HashSet<FieldId>,
     ) -> Result<Vec<ColumnSource>> {
         let field_id_to_source_schema_map =
             Self::build_field_id_to_arrow_schema_map(source_schema)?;
@@ -1178,7 +1178,7 @@ impl RecordBatchTransformer {
 
     fn build_field_id_to_arrow_schema_map(
         source_schema: &SchemaRef,
-    ) -> Result<HashMap<i32, (FieldRef, usize)>> {
+    ) -> Result<HashMap<FieldId, (FieldRef, usize)>> {
         let mut field_id_to_source_schema = HashMap::new();
         for (source_field_idx, source_field) in source_schema.fields.iter().enumerate() {
             if let Some(this_field_id) = try_get_field_id_from_metadata(source_field)? {

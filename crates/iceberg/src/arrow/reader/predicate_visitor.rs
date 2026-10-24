@@ -38,15 +38,15 @@ use crate::arrow::get_arrow_datum;
 use crate::error::{Result, invalid_data};
 use crate::expr::visitors::bound_predicate_visitor::BoundPredicateVisitor;
 use crate::expr::{BoundPredicate, BoundReference};
-use crate::spec::Datum;
+use crate::spec::{Datum, FieldId};
 
 /// A visitor to collect field ids from bound predicates.
 pub(super) struct CollectFieldIdVisitor {
-    pub(super) field_ids: HashSet<i32>,
+    pub(super) field_ids: HashSet<FieldId>,
 }
 
 impl CollectFieldIdVisitor {
-    pub(super) fn field_ids(self) -> HashSet<i32> {
+    pub(super) fn field_ids(self) -> HashSet<FieldId> {
         self.field_ids
     }
 }
@@ -200,7 +200,7 @@ pub(super) struct PredicateConverter<'a> {
     /// The Parquet schema descriptor.
     pub(super) parquet_schema: &'a SchemaDescriptor,
     /// The map between field id and leaf column index in Parquet schema.
-    pub(super) column_map: &'a HashMap<i32, usize>,
+    pub(super) column_map: &'a HashMap<FieldId, usize>,
     /// The required column indices in Parquet schema for the predicates.
     pub(super) column_indices: &'a Vec<usize>,
 }

@@ -37,9 +37,9 @@ use uuid::Uuid;
 use crate::error::{Result, invalid_data};
 use crate::spec::decimal_utils::i128_from_be_bytes;
 use crate::spec::{
-    Datum, FIRST_FIELD_ID, LIST_FIELD_NAME, ListType, MAP_KEY_FIELD_NAME, MAP_VALUE_FIELD_NAME,
-    MapType, NestedField, NestedFieldRef, PrimitiveLiteral, PrimitiveType, Schema, SchemaVisitor,
-    StructType, Type, VariantType,
+    Datum, FIRST_FIELD_ID, FieldId, LIST_FIELD_NAME, ListType, MAP_KEY_FIELD_NAME,
+    MAP_VALUE_FIELD_NAME, MapType, NestedField, NestedFieldRef, PrimitiveLiteral, PrimitiveType,
+    Schema, SchemaVisitor, StructType, Type, VariantType,
 };
 use crate::{Error, ErrorKind};
 
@@ -340,7 +340,7 @@ pub fn arrow_type_to_type(ty: &DataType) -> Result<Type> {
 
 const ARROW_FIELD_DOC_KEY: &str = "doc";
 
-pub(super) fn try_get_field_id_from_metadata(field: &Field) -> Result<Option<i32>> {
+pub(super) fn try_get_field_id_from_metadata(field: &Field) -> Result<Option<FieldId>> {
     field
         .metadata()
         .get(PARQUET_FIELD_ID_META_KEY)
@@ -354,7 +354,7 @@ pub(super) fn try_get_field_id_from_metadata(field: &Field) -> Result<Option<i32
         .transpose()
 }
 
-pub(super) fn get_field_id_from_metadata(field: &FieldRef) -> Result<i32> {
+pub(super) fn get_field_id_from_metadata(field: &FieldRef) -> Result<FieldId> {
     try_get_field_id_from_metadata(field)?
         .ok_or_else(|| invalid_data!("Field id not found in metadata"))
 }
@@ -369,11 +369,11 @@ fn get_field_doc(field: &FieldRef) -> Option<String> {
 struct ArrowSchemaConverter {
     /// When set, the schema builder will reassign field IDs starting from this value
     /// using level-order traversal (breadth-first).
-    reassign_field_ids_from: Option<i32>,
+    reassign_field_ids_from: Option<FieldId>,
     /// Generates unique placeholder IDs for fields before reassignment.
     /// Required because `ReassignFieldIds` builds an old-to-new ID mapping
     /// that expects unique input IDs.
-    next_field_id: i32,
+    next_field_id: FieldId,
 }
 
 impl ArrowSchemaConverter {
@@ -384,14 +384,14 @@ impl ArrowSchemaConverter {
         }
     }
 
-    fn new_with_field_ids_from(start_from: i32) -> Self {
+    fn new_with_field_ids_from(start_from: FieldId) -> Self {
         Self {
             reassign_field_ids_from: Some(start_from),
             next_field_id: 0,
         }
     }
 
-    fn get_field_id(&mut self, field: &FieldRef) -> Result<i32> {
+    fn get_field_id(&mut self, field: &FieldRef) -> Result<FieldId> {
         if self.reassign_field_ids_from.is_some() {
             // Field IDs will be reassigned by the schema builder.
             // We need unique temporary IDs because ReassignFieldIds builds an

@@ -35,7 +35,7 @@ use crate::error::{Result, invalid_data};
 use crate::expr::BoundPredicate;
 use crate::expr::visitors::bound_predicate_visitor::visit;
 use crate::spec::{
-    LIST_FIELD_NAME, MAP_KEY_FIELD_NAME, MAP_VALUE_FIELD_NAME, MappedField, NameMapping,
+    FieldId, LIST_FIELD_NAME, MAP_KEY_FIELD_NAME, MAP_VALUE_FIELD_NAME, MappedField, NameMapping,
     NestedField, PrimitiveType, Schema, Type,
 };
 use crate::{Error, ErrorKind};
@@ -46,7 +46,7 @@ impl ArrowReader {
         arrow_schema: &ArrowSchemaRef,
         predicate: &BoundPredicate,
         use_position_fallback: bool,
-    ) -> Result<(HashSet<i32>, HashMap<i32, usize>)> {
+    ) -> Result<(HashSet<FieldId>, HashMap<FieldId, usize>)> {
         // Collects all Iceberg field IDs referenced in the filter predicate
         let mut collector = CollectFieldIdVisitor {
             field_ids: HashSet::default(),
@@ -69,7 +69,7 @@ impl ArrowReader {
 
     /// Recursively extract leaf field IDs because Parquet projection works at the leaf column level.
     /// Nested types (struct/list/map) are flattened in Parquet's columnar format.
-    fn include_leaf_field_id(field: &NestedField, field_ids: &mut Vec<i32>) {
+    fn include_leaf_field_id(field: &NestedField, field_ids: &mut Vec<FieldId>) {
         match field.field_type.as_ref() {
             Type::Primitive(_) => {
                 field_ids.push(field.id);
@@ -95,7 +95,7 @@ impl ArrowReader {
     }
 
     pub(super) fn get_arrow_projection_mask(
-        field_ids: &[i32],
+        field_ids: &[FieldId],
         iceberg_schema_of_task: &Schema,
         parquet_schema: &SchemaDescriptor,
         arrow_schema: &ArrowSchemaRef,
@@ -170,7 +170,7 @@ impl ArrowReader {
     /// Standard projection using embedded field IDs from Parquet metadata.
     /// For iceberg-java compatibility with ParquetSchemaUtil.pruneColumns().
     fn get_arrow_projection_mask_with_field_ids(
-        leaf_field_ids: &[i32],
+        leaf_field_ids: &[FieldId],
         iceberg_schema_of_task: &Schema,
         parquet_schema: &SchemaDescriptor,
         arrow_schema: &ArrowSchemaRef,
@@ -179,7 +179,7 @@ impl ArrowReader {
         let mut column_map = HashMap::with_capacity(leaf_field_ids.len());
         let fields = arrow_schema.fields();
         // HashSet for O(1) membership checks instead of O(n) slice scans.
-        let leaf_field_id_set: HashSet<i32> = leaf_field_ids.iter().copied().collect();
+        let leaf_field_id_set: HashSet<FieldId> = leaf_field_ids.iter().copied().collect();
 
         // Pre-project only the fields that have been selected, possibly avoiding converting
         // some Arrow types that are not yet supported.
@@ -241,7 +241,7 @@ impl ArrowReader {
     /// Uses position-based matching: field ID N → column position N-1.
     /// Projects entire top-level columns (including nested content) for iceberg-java compatibility.
     fn get_arrow_projection_mask_fallback(
-        field_ids: &[i32],
+        field_ids: &[FieldId],
         parquet_schema: &SchemaDescriptor,
     ) -> Result<ProjectionMask> {
         // Position-based: field_id N → column N-1 (field IDs are 1-indexed)
@@ -286,7 +286,7 @@ fn type_contains_variant(field_type: &Type) -> bool {
 /// Returns None if the Parquet file doesn't have field IDs embedded (e.g., migrated tables).
 pub(super) fn build_field_id_map(
     parquet_schema: &SchemaDescriptor,
-) -> Result<Option<HashMap<i32, usize>>> {
+) -> Result<Option<HashMap<FieldId, usize>>> {
     let mut column_map = HashMap::new();
 
     for (idx, field) in parquet_schema.columns().iter().enumerate() {
@@ -318,7 +318,7 @@ pub(super) fn build_field_id_map(
 /// does carry its id.
 pub(super) fn find_leaf_by_field_id(
     parquet_schema: &SchemaDescriptor,
-    field_id: i32,
+    field_id: FieldId,
 ) -> Option<usize> {
     parquet_schema.columns().iter().position(|col| {
         matches!(
@@ -352,7 +352,7 @@ fn leaf_count(ty: &parquet::schema::types::Type) -> usize {
 /// fileSchema.getFields() assigning ordinal IDs to top-level fields.
 pub(super) fn build_fallback_field_id_map(
     parquet_schema: &SchemaDescriptor,
-) -> HashMap<i32, usize> {
+) -> HashMap<FieldId, usize> {
     let mut column_map = HashMap::new();
     let mut leaf_idx = 0;
 
@@ -376,7 +376,7 @@ pub(super) fn build_fallback_field_id_map(
 /// same depth-first order as Parquet leaf columns, so the Arrow leaf index lines up with
 /// the Parquet column index. Columns the mapping did not match carry no field-id
 /// metadata and are simply absent from the map.
-fn build_field_id_map_from_arrow_schema(arrow_schema: &ArrowSchemaRef) -> HashMap<i32, usize> {
+fn build_field_id_map_from_arrow_schema(arrow_schema: &ArrowSchemaRef) -> HashMap<FieldId, usize> {
     let mut column_map = HashMap::new();
     arrow_schema.fields().filter_leaves(|idx, field| {
         if let Some(field_id) = parquet_field_id(field) {
@@ -388,7 +388,7 @@ fn build_field_id_map_from_arrow_schema(arrow_schema: &ArrowSchemaRef) -> HashMa
 }
 
 /// Returns the field ID in `field`'s `PARQUET:field_id` metadata, if it has a valid one.
-fn parquet_field_id(field: &Field) -> Option<i32> {
+fn parquet_field_id(field: &Field) -> Option<FieldId> {
     field
         .metadata()
         .get(PARQUET_FIELD_ID_META_KEY)
@@ -593,8 +593,8 @@ mod tests {
     use crate::io::FileIO;
     use crate::scan::{FileScanTask, FileScanTaskStream};
     use crate::spec::{
-        DataFileFormat, Datum, MappedField, NameMapping, NestedField, PrimitiveType, Schema,
-        StructType, Type, VariantType,
+        DataFileFormat, Datum, FieldId, MappedField, NameMapping, NestedField, PrimitiveType,
+        Schema, StructType, Type, VariantType,
     };
     use crate::{ErrorKind, Runtime};
 
@@ -2379,7 +2379,7 @@ message schema {
         use crate::spec::PrimitiveType::{Int, Long};
         use crate::spec::{ListType, MapType};
 
-        fn struct_of(fields: &[(i32, &str, PrimitiveType)]) -> Type {
+        fn struct_of(fields: &[(FieldId, &str, PrimitiveType)]) -> Type {
             Type::Struct(StructType::new(
                 fields
                     .iter()

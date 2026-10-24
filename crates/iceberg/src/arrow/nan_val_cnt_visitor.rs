@@ -27,8 +27,8 @@ use arrow_schema::DataType;
 use crate::Result;
 use crate::arrow::{ArrowArrayAccessor, FieldMatchMode};
 use crate::spec::{
-    ListType, MapType, NestedFieldRef, PrimitiveType, Schema, SchemaRef, SchemaWithPartnerVisitor,
-    StructType, VariantType, visit_struct_with_partner,
+    FieldId, ListType, MapType, NestedFieldRef, PrimitiveType, Schema, SchemaRef,
+    SchemaWithPartnerVisitor, StructType, VariantType, visit_struct_with_partner,
 };
 
 macro_rules! cast_and_update_cnt_map {
@@ -70,7 +70,7 @@ macro_rules! count_float_nans {
 /// Visitor which counts and keeps track of NaN value counts in given record batch(s)
 pub struct NanValueCountVisitor {
     /// Stores field ID to NaN value count mapping
-    pub nan_value_counts: HashMap<i32, u64>,
+    pub nan_value_counts: HashMap<FieldId, u64>,
     match_mode: FieldMatchMode,
 }
 

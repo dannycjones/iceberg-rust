@@ -43,7 +43,7 @@ use crate::metadata_columns::{
     RESERVED_FIELD_ID_DELETE_FILE_PATH, RESERVED_FIELD_ID_DELETE_FILE_POS, delete_file_path_field,
     delete_file_pos_field,
 };
-use crate::spec::{DataContentType, DataFile, PartitionKey, Schema, SchemaRef};
+use crate::spec::{DataContentType, DataFile, FieldId, PartitionKey, Schema, SchemaRef};
 use crate::writer::file_writer::FileWriterBuilder;
 use crate::writer::file_writer::location_generator::{FileNameGenerator, LocationGenerator};
 use crate::writer::file_writer::rolling_writer::{RollingFileWriter, RollingFileWriterBuilder};
@@ -93,7 +93,7 @@ pub(crate) fn position_delete_arrow_schema() -> arrow_schema::SchemaRef {
 }
 
 /// Reads a field's Iceberg field id from its Parquet field-id metadata.
-fn field_id(field: &Field) -> Result<i32> {
+fn field_id(field: &Field) -> Result<FieldId> {
     field
         .metadata()
         .get(PARQUET_FIELD_ID_META_KEY)
@@ -342,7 +342,7 @@ mod test {
     }
 
     /// A field carrying an explicit Iceberg field-id metadata entry.
-    fn field_with_id(name: &str, data_type: DataType, field_id: i32) -> Field {
+    fn field_with_id(name: &str, data_type: DataType, field_id: FieldId) -> Field {
         Field::new(name, data_type, false).with_metadata(HashMap::from([(
             PARQUET_FIELD_ID_META_KEY.to_string(),
             field_id.to_string(),
@@ -438,7 +438,7 @@ mod test {
             .read()
             .await?;
         let reader = ParquetRecordBatchReaderBuilder::try_new(content).unwrap();
-        let field_ids: Vec<i32> = reader
+        let field_ids: Vec<FieldId> = reader
             .parquet_schema()
             .columns()
             .iter()
@@ -760,7 +760,7 @@ mod test {
 
         // Correct field ids and types, but the columns are declared nullable. A
         // required schema with a nullable field could emit nulls -> malformed file.
-        let nullable = |name: &str, data_type: DataType, id: i32| {
+        let nullable = |name: &str, data_type: DataType, id: FieldId| {
             Field::new(name, data_type, true).with_metadata(HashMap::from([(
                 PARQUET_FIELD_ID_META_KEY.to_string(),
                 id.to_string(),

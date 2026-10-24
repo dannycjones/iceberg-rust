@@ -21,12 +21,12 @@ use fnv::FnvHashSet;
 
 use crate::expr::visitors::bound_predicate_visitor::{BoundPredicateVisitor, visit};
 use crate::expr::{BoundPredicate, BoundReference, Predicate};
-use crate::spec::{Datum, PartitionField, PartitionSpecRef};
+use crate::spec::{Datum, FieldId, PartitionField, PartitionSpecRef};
 use crate::{Error, ErrorKind};
 
 pub(crate) struct InclusiveProjection {
     partition_spec: PartitionSpecRef,
-    cached_parts: HashMap<i32, Vec<PartitionField>>,
+    cached_parts: HashMap<FieldId, Vec<PartitionField>>,
 }
 
 impl InclusiveProjection {
@@ -37,7 +37,7 @@ impl InclusiveProjection {
         }
     }
 
-    fn get_parts_for_field_id(&mut self, field_id: i32) -> &Vec<PartitionField> {
+    fn get_parts_for_field_id(&mut self, field_id: FieldId) -> &Vec<PartitionField> {
         if let std::collections::hash_map::Entry::Vacant(e) = self.cached_parts.entry(field_id) {
             let mut parts: Vec<PartitionField> = vec![];
             for partition_spec_field in self.partition_spec.fields() {
