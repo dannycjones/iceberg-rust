@@ -20,6 +20,9 @@
 mod schema;
 pub use schema::*;
 
+/// Type alias for the position of a field within an Arrow schema, struct or record batch.
+pub(crate) type ArrowFieldIndex = usize;
+
 mod nan_val_cnt_visitor;
 pub(crate) use nan_val_cnt_visitor::*;
 pub(crate) mod caching_delete_file_loader;

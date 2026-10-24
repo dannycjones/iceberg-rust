@@ -21,6 +21,7 @@ use arrow_array::{Array, ArrayRef, RecordBatch, StructArray, make_array};
 use arrow_buffer::NullBuffer;
 use arrow_schema::{DataType, Field, FieldRef, Fields, Schema, SchemaRef};
 
+use crate::arrow::ArrowFieldIndex;
 use crate::arrow::schema::{schema_to_arrow_schema, try_get_field_id_from_metadata};
 use crate::error::{Result, invalid_data};
 use crate::spec::{FieldId, Schema as IcebergSchema};
@@ -32,7 +33,7 @@ pub struct RecordBatchProjector {
     // A vector of vectors, where each inner vector represents the index path to access a specific field in a nested structure.
     // E.g. [[0], [1, 2]] means the first field is accessed directly from the first column,
     // while the second field is accessed from the second column and then from its third subcolumn (second column must be a struct column).
-    field_indices: Vec<Vec<usize>>,
+    field_indices: Vec<Vec<ArrowFieldIndex>>,
     // The schema reference after projection. This schema is derived from the original schema based on the given field IDs.
     projected_schema: SchemaRef,
 }
@@ -109,7 +110,7 @@ impl RecordBatchProjector {
 
     fn fetch_field_index<F1, F2>(
         fields: &Fields,
-        index_vec: &mut Vec<usize>,
+        index_vec: &mut Vec<ArrowFieldIndex>,
         target_field_id: i64,
         field_id_fetch_func: &F1,
         searchable_field_func: &F2,
@@ -166,7 +167,10 @@ impl RecordBatchProjector {
         Ok(columns)
     }
 
-    fn get_column_by_field_index(batch: &[ArrayRef], field_index: &[usize]) -> Result<ArrayRef> {
+    fn get_column_by_field_index(
+        batch: &[ArrayRef],
+        field_index: &[ArrowFieldIndex],
+    ) -> Result<ArrayRef> {
         let mut rev_iterator = field_index.iter().rev();
         let mut array = &batch[*rev_iterator.next().unwrap()];
         let mut ancestor_nulls = None;

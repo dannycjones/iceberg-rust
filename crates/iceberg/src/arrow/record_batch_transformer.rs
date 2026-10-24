@@ -35,8 +35,8 @@ use parquet::arrow::PARQUET_FIELD_ID_META_KEY;
 use crate::arrow::schema::try_get_field_id_from_metadata;
 use crate::arrow::value::{create_primitive_array_repeated, create_primitive_array_single_element};
 use crate::arrow::{
-    datum_to_arrow_type_with_ree, primitive_type_to_arrow_type_with_ree, schema_to_arrow_schema,
-    type_to_arrow_type,
+    ArrowFieldIndex, datum_to_arrow_type_with_ree, primitive_type_to_arrow_type_with_ree,
+    schema_to_arrow_schema, type_to_arrow_type,
 };
 use crate::error::invalid_data;
 use crate::metadata_columns::{
@@ -142,7 +142,7 @@ pub(crate) enum ColumnSource {
     // signifies that a column should be passed through unmodified
     // from the file's RecordBatch
     PassThrough {
-        source_index: usize,
+        source_index: ArrowFieldIndex,
     },
 
     // signifies that a column from the file's RecordBatch has undergone
@@ -150,7 +150,7 @@ pub(crate) enum ColumnSource {
     // to be promoted according to the given plan
     Promote {
         plan: PromotePlan,
-        source_index: usize,
+        source_index: ArrowFieldIndex,
     },
 
     // Materializes a column by looking up its per-file constant in the
@@ -182,7 +182,7 @@ pub(crate) enum ColumnSource {
     // produce for the column.
     Coalesce {
         field_id: FieldId,
-        source_index: usize,
+        source_index: ArrowFieldIndex,
         target_type: DataType,
     },
     // The iceberg spec refers to other permissible schema evolution actions
@@ -223,7 +223,7 @@ pub(crate) enum PromotePlan {
 #[derive(Debug)]
 pub(crate) enum ChildPlan {
     FromSource {
-        source_index: usize,
+        source_index: ArrowFieldIndex,
         plan: PromotePlan,
     },
     Add {
@@ -971,7 +971,7 @@ impl RecordBatchTransformer {
         source_schema: &ArrowSchemaRef,
         snapshot_schema: &IcebergSchema,
         projected_iceberg_field_ids: &[FieldId],
-        field_id_to_mapped_schema_map: HashMap<FieldId, (FieldRef, usize)>,
+        field_id_to_mapped_schema_map: HashMap<FieldId, (FieldRef, ArrowFieldIndex)>,
         constant_fields: &HashMap<FieldId, ColumnConstant>,
         virtual_fields: &HashSet<FieldId>,
     ) -> Result<Vec<ColumnSource>> {
@@ -1178,7 +1178,7 @@ impl RecordBatchTransformer {
 
     fn build_field_id_to_arrow_schema_map(
         source_schema: &SchemaRef,
-    ) -> Result<HashMap<FieldId, (FieldRef, usize)>> {
+    ) -> Result<HashMap<FieldId, (FieldRef, ArrowFieldIndex)>> {
         let mut field_id_to_source_schema = HashMap::new();
         for (source_field_idx, source_field) in source_schema.fields.iter().enumerate() {
             if let Some(this_field_id) = try_get_field_id_from_metadata(source_field)? {

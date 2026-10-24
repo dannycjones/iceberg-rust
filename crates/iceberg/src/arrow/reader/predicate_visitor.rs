@@ -34,7 +34,7 @@ use arrow_string::like::starts_with;
 use fnv::FnvHashSet;
 use parquet::schema::types::SchemaDescriptor;
 
-use crate::arrow::get_arrow_datum;
+use crate::arrow::{ArrowFieldIndex, get_arrow_datum};
 use crate::error::{Result, invalid_data};
 use crate::expr::visitors::bound_predicate_visitor::BoundPredicateVisitor;
 use crate::expr::{BoundPredicate, BoundReference};
@@ -210,7 +210,7 @@ impl PredicateConverter<'_> {
     /// required column indices which is used to project the column in the record batch.
     /// Return None if the field id is not found in the column map, which is possible
     /// due to schema evolution.
-    fn bound_reference(&mut self, reference: &BoundReference) -> Result<Option<usize>> {
+    fn bound_reference(&mut self, reference: &BoundReference) -> Result<Option<ArrowFieldIndex>> {
         // The leaf column's index in Parquet schema.
         if let Some(column_idx) = self.column_map.get(&reference.field().id) {
             if self.parquet_schema.get_column_root(*column_idx).is_group() {
@@ -266,7 +266,7 @@ fn constant_bool_array(value: bool, len: usize) -> BooleanArray {
 /// supports top-level columns for now.
 fn project_column(
     batch: &RecordBatch,
-    column_idx: usize,
+    column_idx: ArrowFieldIndex,
 ) -> std::result::Result<ArrayRef, ArrowError> {
     let column = batch.column(column_idx);
 
