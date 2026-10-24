@@ -21,7 +21,7 @@ use std::sync::Arc;
 use crate::encryption::EncryptionManager;
 use crate::io::FileIO;
 use crate::spec::{
-    Manifest, ManifestFile, ManifestList, ManifestListReader, ManifestReader, SnapshotRef,
+    Manifest, ManifestFile, ManifestList, ManifestListReader, ManifestReader, RowId, SnapshotRef,
     TableMetadataRef,
 };
 use crate::{Error, ErrorKind, Result};
@@ -46,7 +46,7 @@ pub(crate) enum CachedObjectKey {
     // manifest inherits it onto its entries: the same physical manifest can be
     // referenced with different offsets across snapshots and branches, so it
     // cannot be shared under the path alone.
-    Manifest((String, Option<u64>)),
+    Manifest((String, Option<RowId>)),
 }
 
 /// Caches metadata objects deserialized from immutable files

@@ -400,7 +400,7 @@ impl TableMetadataBuilder {
             self.metadata.next_row_id = self
                 .metadata
                 .next_row_id
-                .checked_add(added_rows)
+                .checked_add_unsigned(added_rows)
                 .ok_or_else(|| {
                     invalid_data!(
                         "Cannot add snapshot: next-row-id overflowed when adding added-rows"
@@ -3353,7 +3353,7 @@ mod tests {
             .unwrap()
             .metadata;
 
-        assert_eq!(first_addition.next_row_id(), new_rows);
+        assert_eq!(first_addition.next_row_id(), 30);
 
         let add_more_rows = Snapshot::builder()
             .with_snapshot_id(1)
@@ -3376,7 +3376,7 @@ mod tests {
             .build()
             .unwrap()
             .metadata;
-        assert_eq!(second_addition.next_row_id(), new_rows * 2);
+        assert_eq!(second_addition.next_row_id(), 60);
     }
 
     #[test]

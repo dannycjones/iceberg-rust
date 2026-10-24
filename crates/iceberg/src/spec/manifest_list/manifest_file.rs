@@ -22,7 +22,7 @@ use serde_derive::{Deserialize, Serialize};
 use super::ByteBuf;
 use crate::Error;
 use crate::error::{Result, invalid_data};
-use crate::spec::{PartitionSpecId, SnapshotId};
+use crate::spec::{PartitionSpecId, RowId, SnapshotId};
 
 /// Entry in a manifest list.
 #[derive(Debug, PartialEq, Clone, Eq, Hash)]
@@ -103,7 +103,7 @@ pub struct ManifestFile {
     /// field 520
     ///
     /// The starting _row_id to assign to rows added by ADDED data files
-    pub first_row_id: Option<u64>,
+    pub first_row_id: Option<RowId>,
 }
 
 impl ManifestFile {
@@ -202,8 +202,8 @@ mod test {
     use crate::io::FileIO;
     use crate::spec::{
         DataContentType, DataFileBuilder, DataFileFormat, ManifestEntry, ManifestReader,
-        ManifestStatus, ManifestWriterBuilder, NestedField, PartitionSpec, PrimitiveType, Schema,
-        SchemaRef, Type,
+        ManifestStatus, ManifestWriterBuilder, NestedField, PartitionSpec, PrimitiveType, RowId,
+        Schema, SchemaRef, Type,
     };
 
     #[test]
@@ -364,7 +364,7 @@ mod test {
     fn data_entry(
         status: ManifestStatus,
         record_count: u64,
-        first_row_id: Option<i64>,
+        first_row_id: Option<RowId>,
     ) -> ManifestEntry {
         let data_file = DataFileBuilder::default()
             .content(DataContentType::Data)

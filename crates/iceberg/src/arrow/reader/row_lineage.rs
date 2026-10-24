@@ -36,7 +36,7 @@ use crate::error::invalid_data;
 use crate::metadata_columns::{
     RESERVED_COL_NAME_ROW_ID, RESERVED_FIELD_ID_POS, RESERVED_FIELD_ID_ROW_ID,
 };
-use crate::spec::FieldId;
+use crate::spec::{FieldId, RowId};
 use crate::{Error, ErrorKind, Result};
 
 /// Appends the synthesized `_row_id` column to `batch`.
@@ -51,7 +51,7 @@ use crate::{Error, ErrorKind, Result};
 /// column tagged with the reserved `_row_id` field id.
 pub(crate) fn synthesize_row_id_column(
     batch: RecordBatch,
-    first_row_id: Option<i64>,
+    first_row_id: Option<RowId>,
 ) -> Result<RecordBatch> {
     let row_id: ArrayRef = match first_row_id {
         None => Arc::new(Int64Array::new_null(batch.num_rows())),
@@ -184,7 +184,7 @@ mod tests {
         RecordBatch::try_new(Arc::new(Schema::new(fields)), columns).unwrap()
     }
 
-    fn row_ids(rb: &RecordBatch) -> Vec<Option<i64>> {
+    fn row_ids(rb: &RecordBatch) -> Vec<Option<RowId>> {
         let v = rb
             .column_by_name(RESERVED_COL_NAME_ROW_ID)
             .unwrap()
@@ -247,7 +247,7 @@ mod tests {
     fn empty_batch() {
         let out = synthesize_row_id_column(batch(vec![], None), Some(100)).unwrap();
         assert_eq!(out.num_rows(), 0);
-        assert_eq!(row_ids(&out), Vec::<Option<i64>>::new());
+        assert_eq!(row_ids(&out), Vec::<Option<RowId>>::new());
     }
 
     #[test]

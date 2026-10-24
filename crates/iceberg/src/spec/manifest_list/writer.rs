@@ -27,7 +27,7 @@ use super::_serde::{ManifestFileV1, ManifestFileV2, ManifestFileV3};
 use super::{FormatVersion, ManifestContentType, ManifestFile, UNASSIGNED_SEQUENCE_NUMBER};
 use crate::error::{Result, invalid_data};
 use crate::io::{FileMetadata, FileWrite};
-use crate::spec::SnapshotId;
+use crate::spec::{RowId, SnapshotId};
 use crate::{Error, ErrorKind};
 
 /// A manifest list writer.
@@ -37,7 +37,7 @@ pub struct ManifestListWriter {
     avro_writer: Writer<'static, Vec<u8>>,
     sequence_number: i64,
     snapshot_id: SnapshotId,
-    next_row_id: Option<u64>,
+    next_row_id: Option<RowId>,
 }
 
 impl std::fmt::Debug for ManifestListWriter {
@@ -51,7 +51,7 @@ impl std::fmt::Debug for ManifestListWriter {
 
 impl ManifestListWriter {
     /// Get the next row ID that will be assigned to the next data manifest added.
-    pub fn next_row_id(&self) -> Option<u64> {
+    pub fn next_row_id(&self) -> Option<RowId> {
         self.next_row_id
     }
 
@@ -108,7 +108,7 @@ impl ManifestListWriter {
         snapshot_id: SnapshotId,
         parent_snapshot_id: Option<SnapshotId>,
         sequence_number: i64,
-        first_row_id: Option<u64>, // Always None for delete manifests
+        first_row_id: Option<RowId>, // Always None for delete manifests
     ) -> Self {
         let mut metadata = HashMap::from_iter([
             ("snapshot-id".to_string(), snapshot_id.to_string()),
@@ -143,7 +143,7 @@ impl ManifestListWriter {
         metadata: HashMap<String, String>,
         sequence_number: i64,
         snapshot_id: SnapshotId,
-        first_row_id: Option<u64>,
+        first_row_id: Option<RowId>,
     ) -> Self {
         let avro_schema = match format_version {
             FormatVersion::V1 => &MANIFEST_LIST_AVRO_SCHEMA_V1,
@@ -258,8 +258,8 @@ impl ManifestListWriter {
                         manifest.first_row_id = Some(writer_next_row_id);
 
                         self.next_row_id = writer_next_row_id
-                        .checked_add(existing_rows_count)
-                        .and_then(|sum| sum.checked_add(added_rows_count))
+                        .checked_add_unsigned(existing_rows_count)
+                        .and_then(|sum| sum.checked_add_unsigned(added_rows_count))
                         .ok_or_else(|| {
                             invalid_data!(
                                     "Row ID overflow when computing next row ID for Manifest {}. Next Row ID: {writer_next_row_id}, Existing Rows Count: {existing_rows_count}, Added Rows Count: {added_rows_count}",

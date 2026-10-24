@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 use typed_builder::TypedBuilder;
 
 use crate::error::{Result, invalid_data, timestamp_ms_to_utc};
-use crate::spec::{SchemaId, SchemaRef, TableMetadata};
+use crate::spec::{RowId, SchemaId, SchemaRef, TableMetadata};
 
 /// The ref name of the main branch of the table.
 pub const MAIN_BRANCH: &str = "main";
@@ -79,7 +79,7 @@ pub struct Summary {
 /// Row range of a snapshot, contains first_row_id and added_rows_count.
 pub struct SnapshotRowRange {
     /// The first _row_id assigned to the first row in the first data file in the first manifest.
-    pub first_row_id: u64,
+    pub first_row_id: RowId,
     /// The upper bound of the number of rows with assigned row IDs
     pub added_rows: u64,
 }
@@ -115,11 +115,11 @@ pub struct Snapshot {
     pub(crate) encryption_key_id: Option<String>,
     /// Row range of this snapshot, required when the table version supports row lineage.
     /// Specify as a tuple of (first_row_id, added_rows_count)
-    #[builder(default, setter(!strip_option, transform = |first_row_id: u64, added_rows: u64| Some(SnapshotRowRange { first_row_id, added_rows })))]
+    #[builder(default, setter(!strip_option, transform = |first_row_id: RowId, added_rows: u64| Some(SnapshotRowRange { first_row_id, added_rows })))]
     // This is specified as a struct instead of two separate fields to ensure that both fields are either set or not set.
     // The java implementations uses two separate fields, then sets `added_row_counts` to Null if `first_row_id` is set to Null.
     // It throws an error if `added_row_counts` is set but `first_row_id` is not set, or if either of the two is negative.
-    // We handle all cases infallible using the rust type system.
+    // We handle the pairing and `added_rows` sign with the rust type system; a negative `first_row_id` is rejected on deserialization.
     pub(crate) row_range: Option<SnapshotRowRange>,
 }
 
@@ -196,7 +196,7 @@ impl Snapshot {
     /// this branch) in the past.
     ///
     /// This field is optional but is required when the table version supports row lineage.
-    pub fn first_row_id(&self) -> Option<u64> {
+    pub fn first_row_id(&self) -> Option<RowId> {
         self.row_range.as_ref().map(|r| r.first_row_id)
     }
 
@@ -210,7 +210,7 @@ impl Snapshot {
 
     /// Returns the row range of this snapshot, if available.
     /// This is a tuple containing (first_row_id, added_rows_count).
-    pub fn row_range(&self) -> Option<(u64, u64)> {
+    pub fn row_range(&self) -> Option<(RowId, u64)> {
         self.row_range
             .as_ref()
             .map(|r| (r.first_row_id, r.added_rows))
@@ -235,7 +235,7 @@ pub(super) mod _serde {
     use crate::Error;
     use crate::error::invalid_data;
     use crate::spec::snapshot::SnapshotRowRange;
-    use crate::spec::{SchemaId, SnapshotId};
+    use crate::spec::{RowId, SchemaId, SnapshotId};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
     #[serde(rename_all = "kebab-case")]
@@ -250,8 +250,12 @@ pub(super) mod _serde {
         pub summary: Summary,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub schema_id: Option<SchemaId>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub first_row_id: Option<u64>,
+        #[serde(
+            default,
+            skip_serializing_if = "Option::is_none",
+            deserialize_with = "crate::spec::table_metadata::deserialize_optional_row_id"
+        )]
+        pub first_row_id: Option<RowId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub added_rows: Option<u64>,
         #[serde(skip_serializing_if = "Option::is_none")]

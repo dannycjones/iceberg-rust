@@ -25,7 +25,7 @@ use serde_derive::{Deserialize, Serialize};
 use super::ManifestFile;
 use crate::Error;
 use crate::error::{Result, invalid_data};
-use crate::spec::{FieldSummary, PartitionSpecId, SnapshotId};
+use crate::spec::{FieldSummary, PartitionSpecId, RowId, SnapshotId};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(transparent)]
@@ -193,7 +193,7 @@ pub(super) struct ManifestFileV3 {
     pub deleted_rows_count: i64,
     pub partitions: Option<Vec<FieldSummary>>,
     pub key_metadata: Option<ByteBuf>,
-    pub first_row_id: Option<i64>,
+    pub first_row_id: Option<RowId>,
 }
 
 impl ManifestFileV3 {
@@ -215,7 +215,7 @@ impl ManifestFileV3 {
             deleted_rows_count: Some(self.deleted_rows_count.try_into()?),
             partitions: self.partitions,
             key_metadata: self.key_metadata.map(|b| b.into_vec()),
-            first_row_id: self.first_row_id.map(|n| n.try_into()).transpose()?,
+            first_row_id: non_negative_first_row_id(self.first_row_id)?,
         };
 
         Ok(manifest_file)
@@ -296,6 +296,15 @@ impl ManifestFileV1 {
     }
 }
 
+fn non_negative_first_row_id(first_row_id: Option<RowId>) -> Result<Option<RowId>> {
+    match first_row_id {
+        Some(row_id) if row_id < 0 => Err(invalid_data!(
+            "Invalid first_row_id {row_id}: must not be negative"
+        )),
+        first_row_id => Ok(first_row_id),
+    }
+}
+
 fn convert_to_serde_key_metadata(key_metadata: Option<Vec<u8>>) -> Option<ByteBuf> {
     match key_metadata {
         Some(metadata) if !metadata.is_empty() => Some(ByteBuf::from(metadata)),
@@ -348,7 +357,7 @@ impl TryFrom<ManifestFile> for ManifestFileV3 {
                 .try_into()?,
             partitions: value.partitions,
             key_metadata,
-            first_row_id: value.first_row_id.map(|n| n.try_into()).transpose()?,
+            first_row_id: value.first_row_id,
         })
     }
 }
@@ -448,7 +457,8 @@ mod test {
 
     use apache_avro::{Reader, Schema};
 
-    use super::{ManifestListV1, ManifestListV2, ManifestListV3};
+    use super::{ManifestFileV3, ManifestListV1, ManifestListV2, ManifestListV3};
+    use crate::ErrorKind;
     use crate::spec::{Datum, FieldSummary, ManifestContentType, ManifestFile, ManifestList};
 
     #[test]
@@ -540,6 +550,35 @@ mod test {
             result,
             r#"[{"manifest_path":"s3a://icebergdata/demo/s1/t1/metadata/05ffe08b-810f-49b3-a8f4-e88fc99b254a-m0.avro","manifest_length":6926,"partition_spec_id":1,"content":0,"sequence_number":1,"min_sequence_number":1,"added_snapshot_id":377075049360453639,"added_files_count":1,"existing_files_count":0,"deleted_files_count":0,"added_rows_count":3,"existing_rows_count":0,"deleted_rows_count":0,"partitions":[{"contains_null":false,"contains_nan":false,"lower_bound":[1,0,0,0,0,0,0,0],"upper_bound":[1,0,0,0,0,0,0,0]}],"key_metadata":null,"first_row_id":10}]"#
         );
+    }
+
+    #[test]
+    fn test_manifest_file_v3_rejects_negative_first_row_id() {
+        let manifest_file = ManifestFile {
+            manifest_path: "s3://bucket/metadata/m0.avro".to_string(),
+            manifest_length: 1,
+            partition_spec_id: 0,
+            content: ManifestContentType::Data,
+            sequence_number: 1,
+            min_sequence_number: 1,
+            added_snapshot_id: 1,
+            added_files_count: Some(1),
+            existing_files_count: Some(0),
+            deleted_files_count: Some(0),
+            added_rows_count: Some(1),
+            existing_rows_count: Some(0),
+            deleted_rows_count: Some(0),
+            partitions: None,
+            key_metadata: None,
+            first_row_id: Some(-1),
+        };
+
+        let err = ManifestFileV3::try_from(manifest_file)
+            .unwrap()
+            .try_into()
+            .unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::DataInvalid);
+        assert!(err.message().contains("Invalid first_row_id -1"));
     }
 
     #[tokio::test]

@@ -25,7 +25,7 @@ use crate::error::invalid_data;
 use crate::expr::BoundPredicate;
 use crate::spec::{
     DataContentType, DataFileFormat, FieldId, ManifestEntryRef, NameMapping, PartitionSpec,
-    PartitionSpecId, Schema, SchemaRef, SortOrderId, SortOrderRef, Struct, StructType,
+    PartitionSpecId, RowId, Schema, SchemaRef, SortOrderId, SortOrderRef, Struct, StructType,
 };
 use crate::{Error, Result};
 
@@ -59,7 +59,7 @@ pub struct FileScanTask {
     /// Used to derive the `_row_id` metadata column: for a row without an
     /// explicit `_row_id`, it is this value plus the row's ordinal position.
     #[builder(default)]
-    first_row_id: Option<i64>,
+    first_row_id: Option<RowId>,
 
     /// The data sequence number of the file, as opposed to its file sequence
     /// number: the sequence number preserved when a file is carried forward
@@ -174,7 +174,7 @@ impl FileScanTask {
     }
 
     /// Returns the first row id assigned to the data file.
-    pub fn first_row_id(&self) -> Option<i64> {
+    pub fn first_row_id(&self) -> Option<RowId> {
         self.first_row_id
     }
 
@@ -439,7 +439,7 @@ mod _serde {
     use crate::expr::BoundPredicate;
     use crate::spec::{
         DataContentType, DataFileFormat, FieldId, Literal, NameMapping, PartitionSpec,
-        PartitionSpecId, RawLiteral, SchemaRef, SortOrderId, SortOrderRef, StructType, Type,
+        PartitionSpecId, RawLiteral, RowId, SchemaRef, SortOrderId, SortOrderRef, StructType, Type,
     };
     use crate::{Error, Result};
 
@@ -449,7 +449,7 @@ mod _serde {
         start: u64,
         length: u64,
         record_count: Option<u64>,
-        first_row_id: Option<i64>,
+        first_row_id: Option<RowId>,
         data_sequence_number: Option<i64>,
         data_file_path: String,
         data_file_format: DataFileFormat,
@@ -482,7 +482,7 @@ mod _serde {
         #[serde(skip_serializing_if = "Option::is_none")]
         record_count: Option<u64>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        first_row_id: Option<i64>,
+        first_row_id: Option<RowId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         data_sequence_number: Option<i64>,
         data_file_path: &'a str,

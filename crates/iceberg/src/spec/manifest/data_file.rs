@@ -31,7 +31,7 @@ use crate::Error;
 use crate::error::{Result, invalid_data};
 use crate::spec::{
     DEFAULT_PARTITION_SPEC_ID, FieldId, Literal, NestedFieldRef, PartitionSpecId, PrimitiveType,
-    SortOrderId, Struct, StructType, Type,
+    RowId, SortOrderId, Struct, StructType, Type,
 };
 
 /// Data file carries data file path, partition tuple, metrics, …
@@ -160,7 +160,7 @@ pub struct DataFile {
     /// The _row_id for the first row in the data file.
     /// For more details, refer to <https://github.com/apache/iceberg/blob/main/format/spec.md#first-row-id-inheritance>
     #[builder(default)]
-    pub(crate) first_row_id: Option<i64>,
+    pub(crate) first_row_id: Option<RowId>,
     /// This field is not included in spec. It is just store in memory representation used
     /// in process.
     #[builder(default = "DEFAULT_PARTITION_SPEC_ID")]
@@ -326,7 +326,7 @@ impl DataFile {
         self.equality_ids.clone()
     }
     /// Get the first row id in the data file.
-    pub fn first_row_id(&self) -> Option<i64> {
+    pub fn first_row_id(&self) -> Option<RowId> {
         self.first_row_id
     }
     /// Get the sort order id of the data file.

@@ -841,7 +841,7 @@ pub(super) mod _serde {
     use serde::{Deserialize as _, Deserializer, Serialize as _};
 
     use super::*;
-    use crate::spec::{SchemaId, Summary};
+    use crate::spec::{RowId, SchemaId, Summary};
 
     pub(super) fn deserialize_snapshot<'de, D>(
         deserializer: D,
@@ -878,8 +878,12 @@ pub(super) mod _serde {
         summary: Summary,
         #[serde(skip_serializing_if = "Option::is_none")]
         schema_id: Option<SchemaId>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        first_row_id: Option<u64>,
+        #[serde(
+            default,
+            skip_serializing_if = "Option::is_none",
+            deserialize_with = "crate::spec::deserialize_optional_row_id"
+        )]
+        first_row_id: Option<RowId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         added_rows: Option<u64>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -1883,6 +1887,30 @@ mod tests {
         )
         .expect("Failed to parse from serialized json");
         assert_eq!(restored, update);
+    }
+
+    #[test]
+    fn test_add_snapshot_v3_rejects_negative_first_row_id() {
+        let json = serde_json::json!(
+        {
+            "action": "add-snapshot",
+            "snapshot": {
+                "snapshot-id": 3055729675574597000i64,
+                "timestamp-ms": 1555100955770i64,
+                "first-row-id": -1,
+                "added-rows": 2,
+                "summary": {
+                    "operation": "append"
+                },
+                "manifest-list": "s3://a/b/2.avro"
+            }
+        });
+
+        let err = serde_json::from_value::<TableUpdate>(json).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("Invalid row id -1: must not be negative")
+        );
     }
 
     #[test]

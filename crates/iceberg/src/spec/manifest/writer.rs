@@ -33,7 +33,7 @@ use crate::spec::manifest::_serde::{ManifestEntryV1, ManifestEntryV2};
 use crate::spec::manifest::{manifest_schema_v1, manifest_schema_v2};
 use crate::spec::{
     DataContentType, DataFile, FieldSummary, ManifestEntry, ManifestFile, ManifestMetadata,
-    ManifestStatus, PrimitiveLiteral, SchemaRef, SnapshotId, StructType, Type,
+    ManifestStatus, PrimitiveLiteral, RowId, SchemaRef, SnapshotId, StructType, Type,
 };
 
 /// Placeholder for snapshot ID. The field with this value must be replaced
@@ -196,7 +196,7 @@ pub struct ManifestWriter {
     existing_rows: u64,
     deleted_files: u32,
     deleted_rows: u64,
-    first_row_id: Option<u64>,
+    first_row_id: Option<RowId>,
 
     min_seq_num: Option<i64>,
 
@@ -212,7 +212,7 @@ impl ManifestWriter {
         location: String,
         snapshot_id: Option<SnapshotId>,
         metadata: ManifestMetadata,
-        first_row_id: Option<u64>,
+        first_row_id: Option<RowId>,
     ) -> Self {
         Self {
             output,

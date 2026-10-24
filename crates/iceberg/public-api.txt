@@ -1363,7 +1363,7 @@ pub fn iceberg::scan::FileScanTask::data_file_path(&self) -> &str
 pub fn iceberg::scan::FileScanTask::data_sequence_number(&self) -> core::option::Option<i64>
 pub fn iceberg::scan::FileScanTask::deletes(&self) -> &[iceberg::scan::FileScanTaskDeleteFile]
 pub fn iceberg::scan::FileScanTask::file_size_in_bytes(&self) -> u64
-pub fn iceberg::scan::FileScanTask::first_row_id(&self) -> core::option::Option<i64>
+pub fn iceberg::scan::FileScanTask::first_row_id(&self) -> core::option::Option<iceberg::spec::RowId>
 pub fn iceberg::scan::FileScanTask::key_metadata(&self) -> core::option::Option<&[u8]>
 pub fn iceberg::scan::FileScanTask::length(&self) -> u64
 pub fn iceberg::scan::FileScanTask::name_mapping(&self) -> core::option::Option<&alloc::sync::Arc<iceberg::spec::NameMapping>>
@@ -2036,7 +2036,7 @@ pub fn iceberg::spec::DataFile::equality_ids(&self) -> core::option::Option<allo
 pub fn iceberg::spec::DataFile::file_format(&self) -> iceberg::spec::DataFileFormat
 pub fn iceberg::spec::DataFile::file_path(&self) -> &str
 pub fn iceberg::spec::DataFile::file_size_in_bytes(&self) -> u64
-pub fn iceberg::spec::DataFile::first_row_id(&self) -> core::option::Option<i64>
+pub fn iceberg::spec::DataFile::first_row_id(&self) -> core::option::Option<iceberg::spec::RowId>
 pub fn iceberg::spec::DataFile::key_metadata(&self) -> core::option::Option<&[u8]>
 pub fn iceberg::spec::DataFile::lower_bounds(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, iceberg::spec::Datum>
 pub fn iceberg::spec::DataFile::nan_value_counts(&self) -> &std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>
@@ -2067,7 +2067,7 @@ pub fn iceberg::spec::DataFileBuilder::equality_ids(&mut self, value: core::opti
 pub fn iceberg::spec::DataFileBuilder::file_format(&mut self, value: iceberg::spec::DataFileFormat) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::file_path(&mut self, value: alloc::string::String) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::file_size_in_bytes(&mut self, value: u64) -> &mut Self
-pub fn iceberg::spec::DataFileBuilder::first_row_id(&mut self, value: core::option::Option<i64>) -> &mut Self
+pub fn iceberg::spec::DataFileBuilder::first_row_id(&mut self, value: core::option::Option<iceberg::spec::RowId>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::key_metadata(&mut self, value: core::option::Option<alloc::vec::Vec<u8>>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::lower_bounds(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, iceberg::spec::Datum>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::nan_value_counts(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>) -> &mut Self
@@ -2290,7 +2290,7 @@ pub iceberg::spec::ManifestFile::deleted_files_count: core::option::Option<u32>
 pub iceberg::spec::ManifestFile::deleted_rows_count: core::option::Option<u64>
 pub iceberg::spec::ManifestFile::existing_files_count: core::option::Option<u32>
 pub iceberg::spec::ManifestFile::existing_rows_count: core::option::Option<u64>
-pub iceberg::spec::ManifestFile::first_row_id: core::option::Option<u64>
+pub iceberg::spec::ManifestFile::first_row_id: core::option::Option<iceberg::spec::RowId>
 pub iceberg::spec::ManifestFile::key_metadata: core::option::Option<alloc::vec::Vec<u8>>
 pub iceberg::spec::ManifestFile::manifest_length: i64
 pub iceberg::spec::ManifestFile::manifest_path: alloc::string::String
@@ -2331,10 +2331,10 @@ pub struct iceberg::spec::ManifestListWriter
 impl iceberg::spec::ManifestListWriter
 pub fn iceberg::spec::ManifestListWriter::add_manifests(&mut self, manifests: impl core::iter::traits::iterator::Iterator<Item = iceberg::spec::ManifestFile>) -> iceberg::Result<()>
 pub async fn iceberg::spec::ManifestListWriter::close(self) -> iceberg::Result<iceberg::io::FileMetadata>
-pub fn iceberg::spec::ManifestListWriter::next_row_id(&self) -> core::option::Option<u64>
+pub fn iceberg::spec::ManifestListWriter::next_row_id(&self) -> core::option::Option<iceberg::spec::RowId>
 pub fn iceberg::spec::ManifestListWriter::v1(writer: alloc::boxed::Box<dyn iceberg::io::FileWrite>, snapshot_id: iceberg::spec::SnapshotId, parent_snapshot_id: core::option::Option<iceberg::spec::SnapshotId>) -> Self
 pub fn iceberg::spec::ManifestListWriter::v2(writer: alloc::boxed::Box<dyn iceberg::io::FileWrite>, snapshot_id: iceberg::spec::SnapshotId, parent_snapshot_id: core::option::Option<iceberg::spec::SnapshotId>, sequence_number: i64) -> Self
-pub fn iceberg::spec::ManifestListWriter::v3(writer: alloc::boxed::Box<dyn iceberg::io::FileWrite>, snapshot_id: iceberg::spec::SnapshotId, parent_snapshot_id: core::option::Option<iceberg::spec::SnapshotId>, sequence_number: i64, first_row_id: core::option::Option<u64>) -> Self
+pub fn iceberg::spec::ManifestListWriter::v3(writer: alloc::boxed::Box<dyn iceberg::io::FileWrite>, snapshot_id: iceberg::spec::SnapshotId, parent_snapshot_id: core::option::Option<iceberg::spec::SnapshotId>, sequence_number: i64, first_row_id: core::option::Option<iceberg::spec::RowId>) -> Self
 impl core::fmt::Debug for iceberg::spec::ManifestListWriter
 pub fn iceberg::spec::ManifestListWriter::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 pub struct iceberg::spec::ManifestMetadata
@@ -2651,10 +2651,10 @@ pub struct iceberg::spec::Snapshot
 impl iceberg::spec::Snapshot
 pub fn iceberg::spec::Snapshot::added_rows_count(&self) -> core::option::Option<u64>
 pub fn iceberg::spec::Snapshot::encryption_key_id(&self) -> core::option::Option<&str>
-pub fn iceberg::spec::Snapshot::first_row_id(&self) -> core::option::Option<u64>
+pub fn iceberg::spec::Snapshot::first_row_id(&self) -> core::option::Option<iceberg::spec::RowId>
 pub fn iceberg::spec::Snapshot::manifest_list(&self) -> &str
 pub fn iceberg::spec::Snapshot::parent_snapshot_id(&self) -> core::option::Option<iceberg::spec::SnapshotId>
-pub fn iceberg::spec::Snapshot::row_range(&self) -> core::option::Option<(u64, u64)>
+pub fn iceberg::spec::Snapshot::row_range(&self) -> core::option::Option<(iceberg::spec::RowId, u64)>
 pub fn iceberg::spec::Snapshot::schema(&self, table_metadata: &iceberg::spec::TableMetadata) -> iceberg::Result<iceberg::spec::SchemaRef>
 pub fn iceberg::spec::Snapshot::schema_id(&self) -> core::option::Option<iceberg::spec::SchemaId>
 pub fn iceberg::spec::Snapshot::sequence_number(&self) -> i64
@@ -2711,7 +2711,7 @@ impl<'de> serde_core::de::Deserialize<'de> for iceberg::spec::SnapshotReference
 pub fn iceberg::spec::SnapshotReference::deserialize<__D>(__deserializer: __D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 pub struct iceberg::spec::SnapshotRowRange
 pub iceberg::spec::SnapshotRowRange::added_rows: u64
-pub iceberg::spec::SnapshotRowRange::first_row_id: u64
+pub iceberg::spec::SnapshotRowRange::first_row_id: iceberg::spec::RowId
 impl core::clone::Clone for iceberg::spec::SnapshotRowRange
 pub fn iceberg::spec::SnapshotRowRange::clone(&self) -> iceberg::spec::SnapshotRowRange
 impl core::cmp::Eq for iceberg::spec::SnapshotRowRange
@@ -2914,7 +2914,7 @@ pub fn iceberg::spec::TableMetadata::location(&self) -> &str
 pub fn iceberg::spec::TableMetadata::metadata_compression_codec(&self) -> iceberg::Result<iceberg::compression::CompressionCodec>
 pub fn iceberg::spec::TableMetadata::metadata_location(&self) -> iceberg::Result<alloc::string::String>
 pub fn iceberg::spec::TableMetadata::metadata_log(&self) -> &[iceberg::spec::MetadataLog]
-pub fn iceberg::spec::TableMetadata::next_row_id(&self) -> u64
+pub fn iceberg::spec::TableMetadata::next_row_id(&self) -> iceberg::spec::RowId
 pub fn iceberg::spec::TableMetadata::next_sequence_number(&self) -> i64
 pub fn iceberg::spec::TableMetadata::partition_spec_by_id(&self, spec_id: iceberg::spec::PartitionSpecId) -> core::option::Option<&iceberg::spec::PartitionSpecRef>
 pub fn iceberg::spec::TableMetadata::partition_specs_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::PartitionSpecRef>
@@ -3299,7 +3299,7 @@ pub fn iceberg::spec::ViewVersionLog::serialize<__S>(&self, __serializer: __S) -
 impl<'de> serde_core::de::Deserialize<'de> for iceberg::spec::ViewVersionLog
 pub fn iceberg::spec::ViewVersionLog::deserialize<__D>(__deserializer: __D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 pub const iceberg::spec::DEFAULT_SCHEMA_ID: iceberg::spec::SchemaId
-pub const iceberg::spec::INITIAL_ROW_ID: u64
+pub const iceberg::spec::INITIAL_ROW_ID: iceberg::spec::RowId
 pub const iceberg::spec::LIST_FIELD_NAME: &str
 pub const iceberg::spec::MAIN_BRANCH: &str
 pub const iceberg::spec::MAP_KEY_FIELD_NAME: &str
@@ -3373,6 +3373,7 @@ pub type iceberg::spec::NestedFieldRef = alloc::sync::Arc<iceberg::spec::NestedF
 pub type iceberg::spec::PartitionFieldId = i32
 pub type iceberg::spec::PartitionSpecId = i32
 pub type iceberg::spec::PartitionSpecRef = alloc::sync::Arc<iceberg::spec::PartitionSpec>
+pub type iceberg::spec::RowId = i64
 pub type iceberg::spec::SchemaId = i32
 pub type iceberg::spec::SchemaRef = alloc::sync::Arc<iceberg::spec::Schema>
 pub type iceberg::spec::SnapshotId = i64

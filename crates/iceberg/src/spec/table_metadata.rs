@@ -55,10 +55,36 @@ pub(crate) static ONE_MINUTE_MS: i64 = 60_000;
 pub(crate) static EMPTY_SNAPSHOT_ID: SnapshotId = -1;
 pub(crate) static INITIAL_SEQUENCE_NUMBER: i64 = 0;
 
+/// Type alias for row id.
+pub type RowId = i64;
+
 /// Initial row id for row lineage for new v3 tables and older tables upgrading to v3.
-pub const INITIAL_ROW_ID: u64 = 0;
+pub const INITIAL_ROW_ID: RowId = 0;
 /// Minimum format version that supports row lineage (v3).
 pub const MIN_FORMAT_VERSION_ROW_LINEAGE: FormatVersion = FormatVersion::V3;
+
+/// Deserializes a row id, rejecting negative values.
+pub(crate) fn deserialize_row_id<'de, D>(deserializer: D) -> std::result::Result<RowId, D::Error>
+where D: serde::Deserializer<'de> {
+    let row_id = RowId::deserialize(deserializer)?;
+    if row_id < 0 {
+        return Err(serde::de::Error::custom(format!(
+            "Invalid row id {row_id}: must not be negative"
+        )));
+    }
+    Ok(row_id)
+}
+
+/// Deserializes an optional row id, rejecting negative values.
+pub(crate) fn deserialize_optional_row_id<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<RowId>, D::Error>
+where D: serde::Deserializer<'de> {
+    #[derive(Deserialize)]
+    struct NonNegative(#[serde(deserialize_with = "deserialize_row_id")] RowId);
+    Ok(Option::<NonNegative>::deserialize(deserializer)?.map(|NonNegative(row_id)| row_id))
+}
+
 /// Reference to [`TableMetadata`].
 pub type TableMetadataRef = Arc<TableMetadata>;
 
@@ -139,7 +165,7 @@ pub struct TableMetadata {
     /// Encryption Keys - map of key id to the actual key
     pub(crate) encryption_keys: HashMap<String, EncryptedKey>,
     /// Next row id to be assigned for Row Lineage (v3)
-    pub(crate) next_row_id: u64,
+    pub(crate) next_row_id: RowId,
 }
 
 impl TableMetadata {
@@ -467,7 +493,7 @@ impl TableMetadata {
 
     /// Get the next row id to be assigned
     #[inline]
-    pub fn next_row_id(&self) -> u64 {
+    pub fn next_row_id(&self) -> RowId {
         self.next_row_id
     }
 
@@ -785,9 +811,9 @@ pub(super) mod _serde {
     use crate::spec::snapshot::_serde::{SnapshotV1, SnapshotV2, SnapshotV3};
     use crate::spec::{
         EncryptedKey, FieldId, INITIAL_ROW_ID, PartitionField, PartitionFieldId, PartitionSpec,
-        PartitionSpecId, PartitionSpecRef, PartitionStatisticsFile, Schema, SchemaRef, Snapshot,
-        SnapshotId, SnapshotReference, SnapshotRetention, SortOrder, SortOrderId, StatisticsFile,
-        UnboundPartitionSpec,
+        PartitionSpecId, PartitionSpecRef, PartitionStatisticsFile, RowId, Schema, SchemaRef,
+        Snapshot, SnapshotId, SnapshotReference, SnapshotRetention, SortOrder, SortOrderId,
+        StatisticsFile, UnboundPartitionSpec,
     };
     use crate::{Error, ErrorKind};
 
@@ -806,7 +832,8 @@ pub(super) mod _serde {
         pub format_version: VersionNumber<3>,
         #[serde(flatten)]
         pub shared: TableMetadataV2V3Shared,
-        pub next_row_id: u64,
+        #[serde(deserialize_with = "super::deserialize_row_id")]
+        pub next_row_id: RowId,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub encryption_keys: Option<Vec<EncryptedKey>>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -4467,6 +4494,58 @@ mod tests {
             deserialized_snapshot.row_range().unwrap();
         assert_eq!(deserialized_first_row_id, 100);
         assert_eq!(deserialized_added_rows, 50);
+    }
+
+    #[test]
+    fn test_deserialize_v3_rejects_negative_row_ids() {
+        let schema = Schema::builder()
+            .with_fields(vec![
+                NestedField::required(1, "id", Type::Primitive(PrimitiveType::Long)).into(),
+            ])
+            .build()
+            .unwrap();
+        let metadata = TableMetadataBuilder::new(
+            schema,
+            PartitionSpec::unpartition_spec().into_unbound(),
+            SortOrder::unsorted_order(),
+            "s3://bucket/test/location".to_string(),
+            FormatVersion::V3,
+            HashMap::new(),
+        )
+        .unwrap()
+        .build()
+        .unwrap()
+        .metadata;
+        let snapshot = Snapshot::builder()
+            .with_snapshot_id(1)
+            .with_timestamp_ms(metadata.last_updated_ms + 1)
+            .with_sequence_number(1)
+            .with_schema_id(0)
+            .with_manifest_list("s3://bucket/test/metadata/snap-1.avro")
+            .with_summary(Summary {
+                operation: Operation::Append,
+                additional_properties: HashMap::new(),
+            })
+            .with_row_range(0, 4)
+            .build();
+        let metadata = metadata
+            .into_builder(None)
+            .add_snapshot(snapshot)
+            .unwrap()
+            .build()
+            .unwrap()
+            .metadata;
+        let json = serde_json::to_value(&metadata).unwrap();
+        assert!(serde_json::from_value::<TableMetadata>(json.clone()).is_ok());
+
+        let mut negative_next_row_id = json.clone();
+        negative_next_row_id["next-row-id"] = (-1).into();
+        let mut negative_first_row_id = json;
+        negative_first_row_id["snapshots"][0]["first-row-id"] = (-1).into();
+
+        for json in [negative_next_row_id, negative_first_row_id] {
+            assert!(serde_json::from_value::<TableMetadata>(json).is_err());
+        }
     }
 
     #[test]

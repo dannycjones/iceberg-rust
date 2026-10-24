@@ -552,7 +552,17 @@ impl<'a> SnapshotProducer<'a> {
             .with_timestamp_ms(commit_ts);
 
         let new_snapshot = if let Some(writer_next_row_id) = writer_next_row_id {
-            let assigned_rows = writer_next_row_id - self.table.metadata().next_row_id();
+            let assigned_rows = writer_next_row_id
+                .checked_sub(first_row_id)
+                .and_then(|rows| u64::try_from(rows).ok())
+                .ok_or_else(|| {
+                    Error::new(
+                        ErrorKind::Unexpected,
+                        format!(
+                            "Manifest list writer next row id {writer_next_row_id} is behind the snapshot first row id {first_row_id}"
+                        ),
+                    )
+                })?;
             new_snapshot
                 .with_row_range(first_row_id, assigned_rows)
                 .build()

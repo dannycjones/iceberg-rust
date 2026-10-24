@@ -879,7 +879,7 @@ mod tests {
     };
     use crate::scan::{FileScanTask, FileScanTaskDeleteFile, FileScanTaskStream};
     use crate::spec::{
-        DataFileFormat, FieldId, NestedField, PrimitiveType, Schema, SchemaRef, Type,
+        DataFileFormat, FieldId, NestedField, PrimitiveType, RowId, Schema, SchemaRef, Type,
     };
 
     // INT96 encoding: [nanos_low_u32, nanos_high_u32, julian_day_u32]
@@ -1238,7 +1238,7 @@ mod tests {
 
     fn last_updated_seq_task(
         file_path: String,
-        first_row_id: Option<i64>,
+        first_row_id: Option<RowId>,
         data_sequence_number: Option<i64>,
     ) -> FileScanTask {
         use crate::metadata_columns::RESERVED_FIELD_ID_LAST_UPDATED_SEQUENCE_NUMBER;
@@ -1625,13 +1625,13 @@ mod tests {
     }
 
     /// A scan task projecting `id` + `_row_id`, with the given `first_row_id`.
-    fn row_id_task(file_path: String, first_row_id: Option<i64>) -> FileScanTask {
+    fn row_id_task(file_path: String, first_row_id: Option<RowId>) -> FileScanTask {
         row_id_task_with_options(file_path, first_row_id, 0, 0, vec![])
     }
 
     fn row_id_task_with_options(
         file_path: String,
-        first_row_id: Option<i64>,
+        first_row_id: Option<RowId>,
         start: u64,
         length: u64,
         deletes: Vec<FileScanTaskDeleteFile>,
@@ -1663,7 +1663,7 @@ mod tests {
 
     /// Asserts the logical per-row values of the `_row_id` column across all batches,
     /// independent of the physical (run-end) encoding.
-    fn assert_row_id_column(batches: &[RecordBatch], expected: &[Option<i64>]) {
+    fn assert_row_id_column(batches: &[RecordBatch], expected: &[Option<RowId>]) {
         use arrow_array::cast::AsArray;
         use arrow_cast::cast;
         use arrow_schema::DataType;
@@ -2234,7 +2234,7 @@ mod tests {
     /// so a `RowSelection` is applied when the reader has row selection enabled.
     fn row_id_task_with_predicate(
         file_path: String,
-        first_row_id: Option<i64>,
+        first_row_id: Option<RowId>,
         extra_project_field_ids: Vec<FieldId>,
         predicate: crate::expr::Predicate,
     ) -> FileScanTask {
@@ -3315,7 +3315,7 @@ mod tests {
         file_path: String,
         schema: SchemaRef,
         project_field_ids: Vec<FieldId>,
-        first_row_id: Option<i64>,
+        first_row_id: Option<RowId>,
     ) -> FileScanTask {
         FileScanTask::builder()
             .with_file_size_in_bytes(std::fs::metadata(&file_path).unwrap().len())

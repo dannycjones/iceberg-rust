@@ -32,7 +32,8 @@ use serde_with::serde_as;
 use super::{Datum, ManifestEntry, Schema, Struct};
 use crate::error::invalid_data;
 use crate::spec::{
-    FieldId, FormatVersion, Literal, PartitionSpecId, RawLiteral, SnapshotId, SortOrderId, Type,
+    FieldId, FormatVersion, Literal, PartitionSpecId, RawLiteral, RowId, SnapshotId, SortOrderId,
+    Type,
 };
 use crate::{Error, metadata_columns};
 
@@ -134,7 +135,7 @@ pub(super) struct DataFileSerde {
     split_offsets: Option<Vec<i64>>,
     equality_ids: Option<Vec<FieldId>>,
     sort_order_id: Option<SortOrderId>,
-    first_row_id: Option<i64>,
+    first_row_id: Option<RowId>,
     referenced_data_file: Option<String>,
     content_offset: Option<i64>,
     content_size_in_bytes: Option<i64>,
