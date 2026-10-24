@@ -1403,7 +1403,7 @@ pub fn iceberg::scan::FileScanTaskDeleteFile::file_path(&self) -> &str
 pub fn iceberg::scan::FileScanTaskDeleteFile::file_size_in_bytes(&self) -> u64
 pub fn iceberg::scan::FileScanTaskDeleteFile::file_type(&self) -> iceberg::spec::DataContentType
 pub fn iceberg::scan::FileScanTaskDeleteFile::key_metadata(&self) -> core::option::Option<&[u8]>
-pub fn iceberg::scan::FileScanTaskDeleteFile::partition_spec_id(&self) -> i32
+pub fn iceberg::scan::FileScanTaskDeleteFile::partition_spec_id(&self) -> iceberg::spec::PartitionSpecId
 pub fn iceberg::scan::FileScanTaskDeleteFile::record_count(&self) -> core::option::Option<u64>
 pub fn iceberg::scan::FileScanTaskDeleteFile::referenced_data_file(&self) -> core::option::Option<&str>
 impl core::clone::Clone for iceberg::scan::FileScanTaskDeleteFile
@@ -2073,7 +2073,7 @@ pub fn iceberg::spec::DataFileBuilder::lower_bounds(&mut self, value: std::colle
 pub fn iceberg::spec::DataFileBuilder::nan_value_counts(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::null_value_counts(&mut self, value: std::collections::hash::map::HashMap<iceberg::spec::FieldId, u64>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::partition(&mut self, value: iceberg::spec::Struct) -> &mut Self
-pub fn iceberg::spec::DataFileBuilder::partition_spec_id(&mut self, value: i32) -> &mut Self
+pub fn iceberg::spec::DataFileBuilder::partition_spec_id(&mut self, value: iceberg::spec::PartitionSpecId) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::record_count(&mut self, value: u64) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::referenced_data_file(&mut self, value: core::option::Option<alloc::string::String>) -> &mut Self
 pub fn iceberg::spec::DataFileBuilder::sort_order_id(&mut self, value: i32) -> &mut Self
@@ -2295,7 +2295,7 @@ pub iceberg::spec::ManifestFile::key_metadata: core::option::Option<alloc::vec::
 pub iceberg::spec::ManifestFile::manifest_length: i64
 pub iceberg::spec::ManifestFile::manifest_path: alloc::string::String
 pub iceberg::spec::ManifestFile::min_sequence_number: i64
-pub iceberg::spec::ManifestFile::partition_spec_id: i32
+pub iceberg::spec::ManifestFile::partition_spec_id: iceberg::spec::PartitionSpecId
 pub iceberg::spec::ManifestFile::partitions: core::option::Option<alloc::vec::Vec<iceberg::spec::FieldSummary>>
 pub iceberg::spec::ManifestFile::sequence_number: i64
 impl iceberg::spec::ManifestFile
@@ -2554,9 +2554,9 @@ pub fn iceberg::spec::PartitionSpec::is_compatible_with(&self, other: &iceberg::
 pub fn iceberg::spec::PartitionSpec::is_unpartitioned(&self) -> bool
 pub fn iceberg::spec::PartitionSpec::partition_to_path(&self, data: &iceberg::spec::Struct, schema: iceberg::spec::SchemaRef) -> alloc::string::String
 pub fn iceberg::spec::PartitionSpec::partition_type(&self, schema: &iceberg::spec::Schema) -> iceberg::Result<iceberg::spec::StructType>
-pub fn iceberg::spec::PartitionSpec::spec_id(&self) -> i32
+pub fn iceberg::spec::PartitionSpec::spec_id(&self) -> iceberg::spec::PartitionSpecId
 pub fn iceberg::spec::PartitionSpec::unpartition_spec() -> Self
-pub fn iceberg::spec::PartitionSpec::with_spec_id(self, spec_id: i32) -> Self
+pub fn iceberg::spec::PartitionSpec::with_spec_id(self, spec_id: iceberg::spec::PartitionSpecId) -> Self
 impl core::clone::Clone for iceberg::spec::PartitionSpec
 pub fn iceberg::spec::PartitionSpec::clone(&self) -> iceberg::spec::PartitionSpec
 impl core::cmp::Eq for iceberg::spec::PartitionSpec
@@ -2580,7 +2580,7 @@ pub fn iceberg::spec::PartitionSpecBuilder::build(self) -> iceberg::Result<icebe
 pub fn iceberg::spec::PartitionSpecBuilder::new(schema: impl core::convert::Into<iceberg::spec::SchemaRef>) -> Self
 pub fn iceberg::spec::PartitionSpecBuilder::new_from_unbound(unbound: iceberg::spec::UnboundPartitionSpec, schema: impl core::convert::Into<iceberg::spec::SchemaRef>) -> iceberg::Result<Self>
 pub fn iceberg::spec::PartitionSpecBuilder::with_last_assigned_field_id(self, last_assigned_field_id: iceberg::spec::PartitionFieldId) -> Self
-pub fn iceberg::spec::PartitionSpecBuilder::with_spec_id(self, spec_id: i32) -> Self
+pub fn iceberg::spec::PartitionSpecBuilder::with_spec_id(self, spec_id: iceberg::spec::PartitionSpecId) -> Self
 impl core::fmt::Debug for iceberg::spec::PartitionSpecBuilder
 pub fn iceberg::spec::PartitionSpecBuilder::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 pub struct iceberg::spec::PartitionStatisticsFile
@@ -2896,7 +2896,7 @@ pub fn iceberg::spec::TableMetadata::current_schema_id(&self) -> iceberg::spec::
 pub fn iceberg::spec::TableMetadata::current_snapshot(&self) -> core::option::Option<&iceberg::spec::SnapshotRef>
 pub fn iceberg::spec::TableMetadata::current_snapshot_id(&self) -> core::option::Option<iceberg::spec::SnapshotId>
 pub fn iceberg::spec::TableMetadata::default_partition_spec(&self) -> &iceberg::spec::PartitionSpecRef
-pub fn iceberg::spec::TableMetadata::default_partition_spec_id(&self) -> i32
+pub fn iceberg::spec::TableMetadata::default_partition_spec_id(&self) -> iceberg::spec::PartitionSpecId
 pub fn iceberg::spec::TableMetadata::default_partition_type(&self) -> &iceberg::spec::StructType
 pub fn iceberg::spec::TableMetadata::default_sort_order(&self) -> &iceberg::spec::SortOrderRef
 pub fn iceberg::spec::TableMetadata::default_sort_order_id(&self) -> i64
@@ -2916,7 +2916,7 @@ pub fn iceberg::spec::TableMetadata::metadata_location(&self) -> iceberg::Result
 pub fn iceberg::spec::TableMetadata::metadata_log(&self) -> &[iceberg::spec::MetadataLog]
 pub fn iceberg::spec::TableMetadata::next_row_id(&self) -> u64
 pub fn iceberg::spec::TableMetadata::next_sequence_number(&self) -> i64
-pub fn iceberg::spec::TableMetadata::partition_spec_by_id(&self, spec_id: i32) -> core::option::Option<&iceberg::spec::PartitionSpecRef>
+pub fn iceberg::spec::TableMetadata::partition_spec_by_id(&self, spec_id: iceberg::spec::PartitionSpecId) -> core::option::Option<&iceberg::spec::PartitionSpecRef>
 pub fn iceberg::spec::TableMetadata::partition_specs_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::PartitionSpecRef>
 pub fn iceberg::spec::TableMetadata::partition_statistics_for_snapshot(&self, snapshot_id: iceberg::spec::SnapshotId) -> core::option::Option<&iceberg::spec::PartitionStatisticsFile>
 pub fn iceberg::spec::TableMetadata::partition_statistics_iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &iceberg::spec::PartitionStatisticsFile>
@@ -2978,7 +2978,7 @@ pub fn iceberg::spec::TableMetadataBuilder::from_table_creation(table_creation: 
 pub fn iceberg::spec::TableMetadataBuilder::new(schema: iceberg::spec::Schema, spec: impl core::convert::Into<iceberg::spec::UnboundPartitionSpec>, sort_order: iceberg::spec::SortOrder, location: alloc::string::String, format_version: iceberg::spec::FormatVersion, properties: std::collections::hash::map::HashMap<alloc::string::String, alloc::string::String>) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::new_from_metadata(previous: iceberg::spec::TableMetadata, current_file_location: core::option::Option<alloc::string::String>) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::remove_encryption_key(self, key_id: &str) -> Self
-pub fn iceberg::spec::TableMetadataBuilder::remove_partition_specs(self, spec_ids: &[i32]) -> iceberg::Result<Self>
+pub fn iceberg::spec::TableMetadataBuilder::remove_partition_specs(self, spec_ids: &[iceberg::spec::PartitionSpecId]) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::remove_partition_statistics(self, snapshot_id: iceberg::spec::SnapshotId) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::remove_properties(self, properties: &[alloc::string::String]) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::remove_ref(self, ref_name: &str) -> Self
@@ -2987,7 +2987,7 @@ pub fn iceberg::spec::TableMetadataBuilder::remove_snapshots(self, snapshot_ids:
 pub fn iceberg::spec::TableMetadataBuilder::remove_statistics(self, snapshot_id: iceberg::spec::SnapshotId) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::set_branch_snapshot(self, snapshot: iceberg::spec::Snapshot, branch: &str) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::set_current_schema(self, schema_id: i32) -> iceberg::Result<Self>
-pub fn iceberg::spec::TableMetadataBuilder::set_default_partition_spec(self, spec_id: i32) -> iceberg::Result<Self>
+pub fn iceberg::spec::TableMetadataBuilder::set_default_partition_spec(self, spec_id: iceberg::spec::PartitionSpecId) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::set_default_sort_order(self, sort_order_id: i64) -> iceberg::Result<Self>
 pub fn iceberg::spec::TableMetadataBuilder::set_location(self, location: alloc::string::String) -> Self
 pub fn iceberg::spec::TableMetadataBuilder::set_partition_statistics(self, partition_statistics_file: iceberg::spec::PartitionStatisticsFile) -> Self
@@ -3137,8 +3137,8 @@ impl iceberg::spec::UnboundPartitionSpec
 pub fn iceberg::spec::UnboundPartitionSpec::bind(self, schema: impl core::convert::Into<iceberg::spec::SchemaRef>) -> iceberg::Result<iceberg::spec::PartitionSpec>
 pub fn iceberg::spec::UnboundPartitionSpec::builder() -> iceberg::spec::UnboundPartitionSpecBuilder
 pub fn iceberg::spec::UnboundPartitionSpec::fields(&self) -> &[iceberg::spec::UnboundPartitionField]
-pub fn iceberg::spec::UnboundPartitionSpec::spec_id(&self) -> core::option::Option<i32>
-pub fn iceberg::spec::UnboundPartitionSpec::with_spec_id(self, spec_id: i32) -> Self
+pub fn iceberg::spec::UnboundPartitionSpec::spec_id(&self) -> core::option::Option<iceberg::spec::PartitionSpecId>
+pub fn iceberg::spec::UnboundPartitionSpec::with_spec_id(self, spec_id: iceberg::spec::PartitionSpecId) -> Self
 impl core::clone::Clone for iceberg::spec::UnboundPartitionSpec
 pub fn iceberg::spec::UnboundPartitionSpec::clone(&self) -> iceberg::spec::UnboundPartitionSpec
 impl core::cmp::Eq for iceberg::spec::UnboundPartitionSpec
@@ -3161,7 +3161,7 @@ pub fn iceberg::spec::UnboundPartitionSpecBuilder::add_partition_field(self, fie
 pub fn iceberg::spec::UnboundPartitionSpecBuilder::add_partition_fields(self, fields: impl core::iter::traits::collect::IntoIterator<Item = iceberg::spec::UnboundPartitionField>) -> iceberg::Result<Self>
 pub fn iceberg::spec::UnboundPartitionSpecBuilder::build(self) -> iceberg::spec::UnboundPartitionSpec
 pub fn iceberg::spec::UnboundPartitionSpecBuilder::new() -> Self
-pub fn iceberg::spec::UnboundPartitionSpecBuilder::with_spec_id(self, spec_id: i32) -> Self
+pub fn iceberg::spec::UnboundPartitionSpecBuilder::with_spec_id(self, spec_id: iceberg::spec::PartitionSpecId) -> Self
 impl core::default::Default for iceberg::spec::UnboundPartitionSpecBuilder
 pub fn iceberg::spec::UnboundPartitionSpecBuilder::default() -> iceberg::spec::UnboundPartitionSpecBuilder
 impl core::fmt::Debug for iceberg::spec::UnboundPartitionSpecBuilder
@@ -3357,9 +3357,9 @@ pub fn iceberg::spec::SchemaWithPartnerVisitor::primitive(&mut self, p: &iceberg
 pub fn iceberg::spec::SchemaWithPartnerVisitor::schema(&mut self, schema: &iceberg::spec::Schema, partner: &P, value: Self::T) -> iceberg::Result<Self::T>
 pub fn iceberg::spec::SchemaWithPartnerVisitor::struct(&mut self, struct: &iceberg::spec::StructType, partner: &P, results: alloc::vec::Vec<Self::T>) -> iceberg::Result<Self::T>
 pub fn iceberg::spec::SchemaWithPartnerVisitor::variant(&mut self, v: &iceberg::spec::VariantType, partner: &P) -> iceberg::Result<Self::T>
-pub fn iceberg::spec::deserialize_data_file_from_json(json: &str, partition_spec_id: i32, partition_type: &iceberg::spec::StructType, schema: &iceberg::spec::Schema) -> iceberg::Result<iceberg::spec::DataFile>
+pub fn iceberg::spec::deserialize_data_file_from_json(json: &str, partition_spec_id: iceberg::spec::PartitionSpecId, partition_type: &iceberg::spec::StructType, schema: &iceberg::spec::Schema) -> iceberg::Result<iceberg::spec::DataFile>
 pub fn iceberg::spec::prune_columns(schema: &iceberg::spec::Schema, selected: impl core::iter::traits::collect::IntoIterator<Item = iceberg::spec::FieldId>, select_full_types: bool) -> iceberg::Result<iceberg::spec::Type>
-pub fn iceberg::spec::read_data_files_from_avro<R: std::io::Read>(reader: &mut R, schema: &iceberg::spec::Schema, partition_spec_id: i32, partition_type: &iceberg::spec::StructType, version: iceberg::spec::FormatVersion) -> iceberg::Result<alloc::vec::Vec<iceberg::spec::DataFile>>
+pub fn iceberg::spec::read_data_files_from_avro<R: std::io::Read>(reader: &mut R, schema: &iceberg::spec::Schema, partition_spec_id: iceberg::spec::PartitionSpecId, partition_type: &iceberg::spec::StructType, version: iceberg::spec::FormatVersion) -> iceberg::Result<alloc::vec::Vec<iceberg::spec::DataFile>>
 pub fn iceberg::spec::serialize_data_file_to_json(data_file: iceberg::spec::DataFile, partition_type: &iceberg::spec::StructType, format_version: iceberg::spec::FormatVersion) -> iceberg::Result<alloc::string::String>
 pub fn iceberg::spec::visit_schema<V: iceberg::spec::SchemaVisitor>(schema: &iceberg::spec::Schema, visitor: &mut V) -> iceberg::Result<<V as iceberg::spec::SchemaVisitor>::T>
 pub fn iceberg::spec::visit_schema_with_partner<P, V: iceberg::spec::SchemaWithPartnerVisitor<P>, A: iceberg::spec::PartnerAccessor<P>>(schema: &iceberg::spec::Schema, partner: &P, visitor: &mut V, accessor: &A) -> iceberg::Result<<V as iceberg::spec::SchemaWithPartnerVisitor>::T>
@@ -3371,6 +3371,7 @@ pub type iceberg::spec::FieldId = i32
 pub type iceberg::spec::ManifestEntryRef = alloc::sync::Arc<iceberg::spec::ManifestEntry>
 pub type iceberg::spec::NestedFieldRef = alloc::sync::Arc<iceberg::spec::NestedField>
 pub type iceberg::spec::PartitionFieldId = i32
+pub type iceberg::spec::PartitionSpecId = i32
 pub type iceberg::spec::PartitionSpecRef = alloc::sync::Arc<iceberg::spec::PartitionSpec>
 pub type iceberg::spec::SchemaId = i32
 pub type iceberg::spec::SchemaRef = alloc::sync::Arc<iceberg::spec::Schema>
@@ -3777,7 +3778,7 @@ pub iceberg::TableRequirement::CurrentSchemaIdMatch::current_schema_id: iceberg:
 pub iceberg::TableRequirement::DefaultSortOrderIdMatch
 pub iceberg::TableRequirement::DefaultSortOrderIdMatch::default_sort_order_id: i64
 pub iceberg::TableRequirement::DefaultSpecIdMatch
-pub iceberg::TableRequirement::DefaultSpecIdMatch::default_spec_id: i32
+pub iceberg::TableRequirement::DefaultSpecIdMatch::default_spec_id: iceberg::spec::PartitionSpecId
 pub iceberg::TableRequirement::LastAssignedFieldIdMatch
 pub iceberg::TableRequirement::LastAssignedFieldIdMatch::last_assigned_field_id: iceberg::spec::FieldId
 pub iceberg::TableRequirement::LastAssignedPartitionIdMatch
@@ -3817,7 +3818,7 @@ pub iceberg::TableUpdate::AssignUuid::uuid: uuid::Uuid
 pub iceberg::TableUpdate::RemoveEncryptionKey
 pub iceberg::TableUpdate::RemoveEncryptionKey::key_id: alloc::string::String
 pub iceberg::TableUpdate::RemovePartitionSpecs
-pub iceberg::TableUpdate::RemovePartitionSpecs::spec_ids: alloc::vec::Vec<i32>
+pub iceberg::TableUpdate::RemovePartitionSpecs::spec_ids: alloc::vec::Vec<iceberg::spec::PartitionSpecId>
 pub iceberg::TableUpdate::RemovePartitionStatistics
 pub iceberg::TableUpdate::RemovePartitionStatistics::snapshot_id: iceberg::spec::SnapshotId
 pub iceberg::TableUpdate::RemoveProperties
@@ -3835,7 +3836,7 @@ pub iceberg::TableUpdate::SetCurrentSchema::schema_id: i32
 pub iceberg::TableUpdate::SetDefaultSortOrder
 pub iceberg::TableUpdate::SetDefaultSortOrder::sort_order_id: i64
 pub iceberg::TableUpdate::SetDefaultSpec
-pub iceberg::TableUpdate::SetDefaultSpec::spec_id: i32
+pub iceberg::TableUpdate::SetDefaultSpec::spec_id: iceberg::spec::PartitionSpecId
 pub iceberg::TableUpdate::SetLocation
 pub iceberg::TableUpdate::SetLocation::location: alloc::string::String
 pub iceberg::TableUpdate::SetPartitionStatistics

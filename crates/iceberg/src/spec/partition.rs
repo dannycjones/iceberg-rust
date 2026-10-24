@@ -33,8 +33,11 @@ use crate::spec::Struct;
 /// Type alias for partition field id.
 pub type PartitionFieldId = i32;
 
+/// Type alias for partition spec id.
+pub type PartitionSpecId = i32;
+
 pub(crate) const UNPARTITIONED_LAST_ASSIGNED_ID: PartitionFieldId = 999;
-pub(crate) const DEFAULT_PARTITION_SPEC_ID: i32 = 0;
+pub(crate) const DEFAULT_PARTITION_SPEC_ID: PartitionSpecId = 0;
 
 /// Partition fields capture the transform from table data to partition values.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, TypedBuilder)]
@@ -70,7 +73,7 @@ pub type PartitionSpecRef = Arc<PartitionSpec>;
 #[serde(rename_all = "kebab-case")]
 pub struct PartitionSpec {
     /// Identifier for PartitionSpec
-    spec_id: i32,
+    spec_id: PartitionSpecId,
     /// Details of the partition spec
     fields: Vec<PartitionField>,
 }
@@ -87,7 +90,7 @@ impl PartitionSpec {
     }
 
     /// Spec id of the partition spec
-    pub fn spec_id(&self) -> i32 {
+    pub fn spec_id(&self) -> PartitionSpecId {
         self.spec_id
     }
 
@@ -141,7 +144,7 @@ impl PartitionSpec {
     }
 
     /// Change the spec id of the partition spec
-    pub fn with_spec_id(self, spec_id: i32) -> Self {
+    pub fn with_spec_id(self, spec_id: PartitionSpecId) -> Self {
         Self { spec_id, ..self }
     }
 
@@ -428,7 +431,7 @@ mod _serde {
 pub struct UnboundPartitionSpec {
     /// Identifier for PartitionSpec
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) spec_id: Option<i32>,
+    pub(crate) spec_id: Option<PartitionSpecId>,
     /// Details of the partition spec
     pub(crate) fields: Vec<UnboundPartitionField>,
 }
@@ -448,7 +451,7 @@ impl UnboundPartitionSpec {
     }
 
     /// Spec id of the partition spec
-    pub fn spec_id(&self) -> Option<i32> {
+    pub fn spec_id(&self) -> Option<PartitionSpecId> {
         self.spec_id
     }
 
@@ -458,7 +461,7 @@ impl UnboundPartitionSpec {
     }
 
     /// Change the spec id of the partition spec
-    pub fn with_spec_id(self, spec_id: i32) -> Self {
+    pub fn with_spec_id(self, spec_id: PartitionSpecId) -> Self {
         Self {
             spec_id: Some(spec_id),
             ..self
@@ -504,7 +507,7 @@ impl From<PartitionSpec> for UnboundPartitionSpec {
 /// Create a new UnboundPartitionSpec
 #[derive(Debug, Default)]
 pub struct UnboundPartitionSpecBuilder {
-    spec_id: Option<i32>,
+    spec_id: Option<PartitionSpecId>,
     fields: Vec<UnboundPartitionField>,
 }
 
@@ -518,7 +521,7 @@ impl UnboundPartitionSpecBuilder {
     }
 
     /// Set the spec id for the partition spec.
-    pub fn with_spec_id(mut self, spec_id: i32) -> Self {
+    pub fn with_spec_id(mut self, spec_id: PartitionSpecId) -> Self {
         self.spec_id = Some(spec_id);
         self
     }
@@ -558,7 +561,7 @@ impl UnboundPartitionSpecBuilder {
 /// Create valid partition specs for a given schema.
 #[derive(Debug)]
 pub struct PartitionSpecBuilder {
-    spec_id: Option<i32>,
+    spec_id: Option<PartitionSpecId>,
     last_assigned_field_id: PartitionFieldId,
     fields: Vec<UnboundPartitionField>,
     schema: SchemaRef,
@@ -600,7 +603,7 @@ impl PartitionSpecBuilder {
     }
 
     /// Set the spec id for the partition spec.
-    pub fn with_spec_id(mut self, spec_id: i32) -> Self {
+    pub fn with_spec_id(mut self, spec_id: PartitionSpecId) -> Self {
         self.spec_id = Some(spec_id);
         self
     }

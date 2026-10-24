@@ -179,8 +179,8 @@ mod tests {
 
     use super::*;
     use crate::spec::{
-        FieldId, NestedField, PrimitiveType, Transform, Type, UnboundPartitionField,
-        UnboundPartitionSpec,
+        FieldId, NestedField, PartitionSpecId, PrimitiveType, Transform, Type,
+        UnboundPartitionField, UnboundPartitionSpec,
     };
 
     fn test_schema() -> Schema {
@@ -197,7 +197,7 @@ mod tests {
 
     fn build_spec(
         schema: &Schema,
-        spec_id: i32,
+        spec_id: PartitionSpecId,
         fields: Vec<(FieldId, &str, Transform)>,
     ) -> PartitionSpec {
         let mut builder = UnboundPartitionSpec::builder().with_spec_id(spec_id);

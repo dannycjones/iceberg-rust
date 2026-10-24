@@ -23,9 +23,10 @@ use uuid::Uuid;
 use super::{
     DEFAULT_PARTITION_SPEC_ID, DEFAULT_SCHEMA_ID, FieldId, FormatVersion, MAIN_BRANCH, MetadataLog,
     ONE_MINUTE_MS, PartitionField, PartitionFieldId, PartitionSpec, PartitionSpecBuilder,
-    PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotLog, SnapshotReference,
-    SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile, StructType, TableMetadata,
-    TableProperties, Transform, UNPARTITIONED_LAST_ASSIGNED_ID, UnboundPartitionSpec,
+    PartitionSpecId, PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotLog,
+    SnapshotReference, SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile, StructType,
+    TableMetadata, TableProperties, Transform, UNPARTITIONED_LAST_ASSIGNED_ID,
+    UnboundPartitionSpec,
 };
 use crate::error::{Error, ErrorKind, Result, invalid_data};
 use crate::spec::{EncryptedKey, INITIAL_ROW_ID, MIN_FORMAT_VERSION_ROW_LINEAGE, SnapshotId};
@@ -50,7 +51,7 @@ pub struct TableMetadataBuilder {
     metadata: TableMetadata,
     changes: Vec<TableUpdate>,
     last_added_schema_id: Option<i32>,
-    last_added_spec_id: Option<i32>,
+    last_added_spec_id: Option<PartitionSpecId>,
     last_added_order_id: Option<i64>,
     // None if this is a new table (from_metadata) method not used
     previous_history_entry: Option<MetadataLog>,
@@ -894,7 +895,7 @@ impl TableMetadataBuilder {
     /// # Errors
     /// - spec_id is -1 but no spec has been added via `add_partition_spec`.
     /// - No partition spec with the provided `spec_id` exists.
-    pub fn set_default_partition_spec(mut self, mut spec_id: i32) -> Result<Self> {
+    pub fn set_default_partition_spec(mut self, mut spec_id: PartitionSpecId) -> Result<Self> {
         if spec_id == Self::LAST_ADDED {
             spec_id = self.last_added_spec_id.ok_or_else(|| {
                 invalid_data!(
@@ -951,7 +952,7 @@ impl TableMetadataBuilder {
     ///
     /// # Errors
     /// - Cannot remove the default partition spec.
-    pub fn remove_partition_specs(mut self, spec_ids: &[i32]) -> Result<Self> {
+    pub fn remove_partition_specs(mut self, spec_ids: &[PartitionSpecId]) -> Result<Self> {
         if spec_ids.contains(&self.metadata.default_spec.spec_id()) {
             return Err(invalid_data!("Cannot remove default partition spec"));
         }
@@ -1329,7 +1330,7 @@ impl TableMetadataBuilder {
     }
 
     /// If a compatible spec already exists, use the same ID. Otherwise, use 1 more than the highest ID.
-    fn reuse_or_create_new_spec_id(&self, new_spec: &PartitionSpec) -> i32 {
+    fn reuse_or_create_new_spec_id(&self, new_spec: &PartitionSpec) -> PartitionSpecId {
         self.metadata
             .partition_specs
             .iter()
@@ -1341,7 +1342,7 @@ impl TableMetadataBuilder {
             })
     }
 
-    fn get_highest_spec_id(&self) -> Option<i32> {
+    fn get_highest_spec_id(&self) -> Option<PartitionSpecId> {
         self.metadata.partition_specs.keys().max().copied()
     }
 

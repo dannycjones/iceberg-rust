@@ -30,8 +30,8 @@ use super::{
 use crate::Error;
 use crate::error::{Result, invalid_data};
 use crate::spec::{
-    DEFAULT_PARTITION_SPEC_ID, FieldId, Literal, NestedFieldRef, PrimitiveType, Struct, StructType,
-    Type,
+    DEFAULT_PARTITION_SPEC_ID, FieldId, Literal, NestedFieldRef, PartitionSpecId, PrimitiveType,
+    Struct, StructType, Type,
 };
 
 /// Data file carries data file path, partition tuple, metrics, …
@@ -164,7 +164,7 @@ pub struct DataFile {
     /// This field is not included in spec. It is just store in memory representation used
     /// in process.
     #[builder(default = "DEFAULT_PARTITION_SPEC_ID")]
-    pub(crate) partition_spec_id: i32,
+    pub(crate) partition_spec_id: PartitionSpecId,
     /// field id: 143
     ///
     /// Fully qualified location (URI with FS scheme) of a data file that all deletes reference.
@@ -390,7 +390,7 @@ pub fn write_data_files_to_avro<W: Write>(
 pub fn read_data_files_from_avro<R: Read>(
     reader: &mut R,
     schema: &Schema,
-    partition_spec_id: i32,
+    partition_spec_id: PartitionSpecId,
     partition_type: &StructType,
     version: FormatVersion,
 ) -> Result<Vec<DataFile>> {

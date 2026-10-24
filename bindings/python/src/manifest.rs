@@ -18,7 +18,8 @@
 use std::sync::Arc;
 
 use iceberg::spec::{
-    FieldSummary, FormatVersion, Manifest, ManifestEntry, ManifestFile, ManifestList, SnapshotId,
+    FieldSummary, FormatVersion, Manifest, ManifestEntry, ManifestFile, ManifestList,
+    PartitionSpecId, SnapshotId,
 };
 use pyo3::prelude::*;
 
@@ -91,7 +92,7 @@ impl PyManifestFile {
         self.inner.manifest_length
     }
     #[getter]
-    fn partition_spec_id(&self) -> i32 {
+    fn partition_spec_id(&self) -> PartitionSpecId {
         self.inner.partition_spec_id
     }
 

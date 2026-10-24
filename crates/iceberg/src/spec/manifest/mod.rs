@@ -34,8 +34,8 @@ use apache_avro::error::Details;
 pub use writer::*;
 
 use super::{
-    Datum, FormatVersion, ManifestContentType, PartitionSpec, PrimitiveType, Schema, Struct, Type,
-    UNASSIGNED_SEQUENCE_NUMBER,
+    Datum, FormatVersion, ManifestContentType, PartitionSpec, PartitionSpecId, PrimitiveType,
+    Schema, Struct, Type, UNASSIGNED_SEQUENCE_NUMBER,
 };
 use crate::avro::{Resolved, define_named_types_once};
 use crate::error::{Error, Result, invalid_data};
@@ -184,7 +184,7 @@ pub fn serialize_data_file_to_json(
 /// Deserialize a DataFile from a JSON string.
 pub fn deserialize_data_file_from_json(
     json: &str,
-    partition_spec_id: i32,
+    partition_spec_id: PartitionSpecId,
     partition_type: &super::StructType,
     schema: &Schema,
 ) -> Result<DataFile> {

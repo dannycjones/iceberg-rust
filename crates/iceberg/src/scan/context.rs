@@ -30,8 +30,8 @@ use crate::scan::{
 };
 use crate::spec::{
     FieldId, ManifestContentType, ManifestEntryRef, ManifestFile, ManifestList, NameMapping,
-    PartitionSpecRef, PrimitiveType, SchemaRef, SnapshotRef, SortOrderRef, StructType,
-    TableMetadataRef,
+    PartitionSpecId, PartitionSpecRef, PrimitiveType, SchemaRef, SnapshotRef, SortOrderRef,
+    StructType, TableMetadataRef,
 };
 use crate::{Error, ErrorKind, Result};
 
@@ -63,7 +63,7 @@ pub(crate) struct ManifestEntryContext {
     pub expression_evaluator_cache: Arc<ExpressionEvaluatorCache>,
     pub field_ids: Arc<Vec<FieldId>>,
     pub bound_predicates: Option<Arc<BoundPredicates>>,
-    pub partition_spec_id: i32,
+    pub partition_spec_id: PartitionSpecId,
     pub snapshot_schema: SchemaRef,
     pub delete_file_index: DeleteFileIndex,
     pub name_mapping: Option<Arc<NameMapping>>,

@@ -386,7 +386,7 @@ mod tests {
     use crate::ErrorKind;
     use crate::spec::{
         DataContentType, DataFileBuilder, DataFileFormat, Datum, Literal, ManifestEntry,
-        ManifestStatus, Struct,
+        ManifestStatus, PartitionSpecId, Struct,
     };
 
     #[test]
@@ -1324,7 +1324,7 @@ mod tests {
     fn build_deletion_vector(
         referenced_data_file: &str,
         partition: &Struct,
-        spec_id: i32,
+        spec_id: PartitionSpecId,
     ) -> DataFile {
         DataFileBuilder::default()
             .file_path(format!("{}-deletes.puffin", Uuid::new_v4()))
@@ -1345,7 +1345,7 @@ mod tests {
         build_partitioned_eq_delete(&Struct::empty(), 0)
     }
 
-    fn build_partitioned_eq_delete(partition: &Struct, spec_id: i32) -> DataFile {
+    fn build_partitioned_eq_delete(partition: &Struct, spec_id: PartitionSpecId) -> DataFile {
         DataFileBuilder::default()
             .file_path(format!("{}_equality_delete.parquet", Uuid::new_v4()))
             .file_format(DataFileFormat::Parquet)
@@ -1363,7 +1363,7 @@ mod tests {
         build_partitioned_pos_delete(&Struct::empty(), 0)
     }
 
-    fn build_partitioned_pos_delete(partition: &Struct, spec_id: i32) -> DataFile {
+    fn build_partitioned_pos_delete(partition: &Struct, spec_id: PartitionSpecId) -> DataFile {
         DataFileBuilder::default()
             .file_path(format!("{}-pos-delete.parquet", Uuid::new_v4()))
             .file_format(DataFileFormat::Parquet)
@@ -1389,7 +1389,7 @@ mod tests {
             .unwrap()
     }
 
-    fn build_partitioned_data_file(partition_value: &Struct, spec_id: i32) -> DataFile {
+    fn build_partitioned_data_file(partition_value: &Struct, spec_id: PartitionSpecId) -> DataFile {
         DataFileBuilder::default()
             .file_path(format!("{}-data.parquet", Uuid::new_v4()))
             .file_format(DataFileFormat::Parquet)

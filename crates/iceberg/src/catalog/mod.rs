@@ -46,10 +46,10 @@ use crate::error::invalid_data;
 use crate::io::StorageFactory;
 use crate::runtime::Runtime;
 use crate::spec::{
-    EncryptedKey, FieldId, FormatVersion, PartitionFieldId, PartitionStatisticsFile, Schema,
-    SchemaId, Snapshot, SnapshotId, SnapshotReference, SortOrder, StatisticsFile, TableMetadata,
-    TableMetadataBuilder, UnboundPartitionSpec, ViewFormatVersion, ViewRepresentations,
-    ViewVersion,
+    EncryptedKey, FieldId, FormatVersion, PartitionFieldId, PartitionSpecId,
+    PartitionStatisticsFile, Schema, SchemaId, Snapshot, SnapshotId, SnapshotReference, SortOrder,
+    StatisticsFile, TableMetadata, TableMetadataBuilder, UnboundPartitionSpec, ViewFormatVersion,
+    ViewRepresentations, ViewVersion,
 };
 use crate::table::Table;
 use crate::{Error, ErrorKind, Result};
@@ -487,7 +487,7 @@ pub enum TableRequirement {
     DefaultSpecIdMatch {
         /// Default spec id of the table to assert.
         #[serde(rename = "default-spec-id")]
-        default_spec_id: i32,
+        default_spec_id: PartitionSpecId,
     },
     /// The table's default sort order id must match the requirement.
     #[serde(rename = "assert-default-sort-order-id")]
@@ -536,7 +536,7 @@ pub enum TableUpdate {
     #[serde(rename_all = "kebab-case")]
     SetDefaultSpec {
         /// Partition spec ID to set as the default, or -1 to set last added spec
-        spec_id: i32,
+        spec_id: PartitionSpecId,
     },
     /// Add sort order to table.
     #[serde(rename_all = "kebab-case")]
@@ -600,7 +600,7 @@ pub enum TableUpdate {
     #[serde(rename_all = "kebab-case")]
     RemovePartitionSpecs {
         /// Partition spec ids to remove.
-        spec_ids: Vec<i32>,
+        spec_ids: Vec<PartitionSpecId>,
     },
     /// Set statistics for a snapshot
     #[serde(with = "_serde_set_statistics")]

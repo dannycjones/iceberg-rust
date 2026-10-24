@@ -22,7 +22,7 @@ use serde_derive::{Deserialize, Serialize};
 use super::ByteBuf;
 use crate::Error;
 use crate::error::{Result, invalid_data};
-use crate::spec::SnapshotId;
+use crate::spec::{PartitionSpecId, SnapshotId};
 
 /// Entry in a manifest list.
 #[derive(Debug, PartialEq, Clone, Eq, Hash)]
@@ -39,7 +39,7 @@ pub struct ManifestFile {
     ///
     /// ID of a partition spec used to write the manifest; must be listed
     /// in table metadata partition-specs
-    pub partition_spec_id: i32,
+    pub partition_spec_id: PartitionSpecId,
     /// field: 517
     ///
     /// The type of files tracked by the manifest, either data or delete

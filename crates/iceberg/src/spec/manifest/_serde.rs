@@ -31,7 +31,7 @@ use serde_with::serde_as;
 
 use super::{Datum, ManifestEntry, Schema, Struct};
 use crate::error::invalid_data;
-use crate::spec::{FieldId, FormatVersion, Literal, RawLiteral, SnapshotId, Type};
+use crate::spec::{FieldId, FormatVersion, Literal, PartitionSpecId, RawLiteral, SnapshotId, Type};
 use crate::{Error, metadata_columns};
 
 #[derive(Serialize, Deserialize)]
@@ -56,7 +56,7 @@ impl ManifestEntryV2 {
 
     pub fn try_into(
         self,
-        partition_spec_id: i32,
+        partition_spec_id: PartitionSpecId,
         partition_type: &Type,
         schema: &Schema,
     ) -> Result<ManifestEntry, Error> {
@@ -93,7 +93,7 @@ impl ManifestEntryV1 {
 
     pub fn try_into(
         self,
-        partition_spec_id: i32,
+        partition_spec_id: PartitionSpecId,
         partition_type: &Type,
         schema: &Schema,
     ) -> Result<ManifestEntry, Error> {
@@ -186,7 +186,7 @@ impl DataFileSerde {
 
     pub fn try_into(
         self,
-        partition_spec_id: i32,
+        partition_spec_id: PartitionSpecId,
         partition_type: &Type,
         schema: &Schema,
     ) -> Result<super::DataFile, Error> {

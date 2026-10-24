@@ -22,13 +22,13 @@ use crate::expr::visitors::expression_evaluator::ExpressionEvaluator;
 use crate::expr::visitors::inclusive_projection::InclusiveProjection;
 use crate::expr::visitors::manifest_evaluator::ManifestEvaluator;
 use crate::expr::{Bind, BoundPredicate};
-use crate::spec::{Schema, TableMetadataRef};
+use crate::spec::{PartitionSpecId, Schema, TableMetadataRef};
 use crate::{Error, ErrorKind, Result};
 
 /// Manages the caching of [`BoundPredicate`] objects
 /// for [`PartitionSpec`]s based on partition spec id.
 #[derive(Debug)]
-pub(crate) struct PartitionFilterCache(RwLock<HashMap<i32, Arc<BoundPredicate>>>);
+pub(crate) struct PartitionFilterCache(RwLock<HashMap<PartitionSpecId, Arc<BoundPredicate>>>);
 
 impl PartitionFilterCache {
     /// Creates a new [`PartitionFilterCache`]
@@ -41,7 +41,7 @@ impl PartitionFilterCache {
     /// or computes it if not present.
     pub(crate) fn get(
         &self,
-        spec_id: i32,
+        spec_id: PartitionSpecId,
         table_metadata: &TableMetadataRef,
         schema: &Schema,
         case_sensitive: bool,
@@ -134,7 +134,7 @@ impl PartitionFilterCache {
 /// Manages the caching of [`ManifestEvaluator`] objects
 /// for [`PartitionSpec`]s based on partition spec id.
 #[derive(Debug)]
-pub(crate) struct ManifestEvaluatorCache(RwLock<HashMap<i32, Arc<ManifestEvaluator>>>);
+pub(crate) struct ManifestEvaluatorCache(RwLock<HashMap<PartitionSpecId, Arc<ManifestEvaluator>>>);
 
 impl ManifestEvaluatorCache {
     /// Creates a new [`ManifestEvaluatorCache`]
@@ -147,7 +147,7 @@ impl ManifestEvaluatorCache {
     /// or computes it if not present.
     pub(crate) fn get(
         &self,
-        spec_id: i32,
+        spec_id: PartitionSpecId,
         partition_filter: Arc<BoundPredicate>,
     ) -> Arc<ManifestEvaluator> {
         // we need a block here to ensure that the `read()` gets dropped before we hit the `write()`
@@ -201,7 +201,9 @@ impl ManifestEvaluatorCache {
 /// Manages the caching of [`ExpressionEvaluator`] objects
 /// for [`PartitionSpec`]s based on partition spec id.
 #[derive(Debug)]
-pub(crate) struct ExpressionEvaluatorCache(RwLock<HashMap<i32, Arc<ExpressionEvaluator>>>);
+pub(crate) struct ExpressionEvaluatorCache(
+    RwLock<HashMap<PartitionSpecId, Arc<ExpressionEvaluator>>>,
+);
 
 impl ExpressionEvaluatorCache {
     /// Creates a new [`ExpressionEvaluatorCache`]
@@ -214,7 +216,7 @@ impl ExpressionEvaluatorCache {
     /// or computes it if not present.
     pub(crate) fn get(
         &self,
-        spec_id: i32,
+        spec_id: PartitionSpecId,
         partition_filter: &BoundPredicate,
     ) -> Result<Arc<ExpressionEvaluator>> {
         // we need a block here to ensure that the `read()` gets dropped before we hit the `write()`

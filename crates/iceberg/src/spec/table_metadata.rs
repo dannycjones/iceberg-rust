@@ -33,7 +33,7 @@ use uuid::Uuid;
 use super::snapshot::SnapshotReference;
 pub use super::table_metadata_builder::{TableMetadataBuildResult, TableMetadataBuilder};
 use super::{
-    DEFAULT_PARTITION_SPEC_ID, FieldId, PartitionFieldId, PartitionSpecRef,
+    DEFAULT_PARTITION_SPEC_ID, FieldId, PartitionFieldId, PartitionSpecId, PartitionSpecRef,
     PartitionStatisticsFile, Schema, SchemaId, SchemaRef, SnapshotId, SnapshotRef,
     SnapshotRetention, SortOrder, SortOrderRef, StatisticsFile, StructType, TableProperties,
     Transform,
@@ -86,7 +86,7 @@ pub struct TableMetadata {
     /// ID of the table’s current schema.
     pub(crate) current_schema_id: i32,
     /// A list of partition specs, stored as full partition spec objects.
-    pub(crate) partition_specs: HashMap<i32, PartitionSpecRef>,
+    pub(crate) partition_specs: HashMap<PartitionSpecId, PartitionSpecRef>,
     /// ID of the “current” spec that writers should use by default.
     pub(crate) default_spec: PartitionSpecRef,
     /// Partition type of the default partition spec.
@@ -263,7 +263,7 @@ impl TableMetadata {
 
     /// Lookup partition spec by id.
     #[inline]
-    pub fn partition_spec_by_id(&self, spec_id: i32) -> Option<&PartitionSpecRef> {
+    pub fn partition_spec_by_id(&self, spec_id: PartitionSpecId) -> Option<&PartitionSpecRef> {
         self.partition_specs.get(&spec_id)
     }
 
@@ -294,7 +294,7 @@ impl TableMetadata {
 
     #[inline]
     /// Returns spec id of the "current" partition spec.
-    pub fn default_partition_spec_id(&self) -> i32 {
+    pub fn default_partition_spec_id(&self) -> PartitionSpecId {
         self.default_spec.spec_id()
     }
 
@@ -785,8 +785,9 @@ pub(super) mod _serde {
     use crate::spec::snapshot::_serde::{SnapshotV1, SnapshotV2, SnapshotV3};
     use crate::spec::{
         EncryptedKey, FieldId, INITIAL_ROW_ID, PartitionField, PartitionFieldId, PartitionSpec,
-        PartitionSpecRef, PartitionStatisticsFile, Schema, SchemaRef, Snapshot, SnapshotId,
-        SnapshotReference, SnapshotRetention, SortOrder, StatisticsFile, UnboundPartitionSpec,
+        PartitionSpecId, PartitionSpecRef, PartitionStatisticsFile, Schema, SchemaRef, Snapshot,
+        SnapshotId, SnapshotReference, SnapshotRetention, SortOrder, StatisticsFile,
+        UnboundPartitionSpec,
     };
     use crate::{Error, ErrorKind};
 
@@ -824,7 +825,7 @@ pub(super) mod _serde {
         pub schemas: Vec<SchemaV2>,
         pub current_schema_id: i32,
         pub partition_specs: Vec<PartitionSpec>,
-        pub default_spec_id: i32,
+        pub default_spec_id: PartitionSpecId,
         pub last_partition_id: PartitionFieldId,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub properties: Option<HashMap<String, String>>,
@@ -876,7 +877,7 @@ pub(super) mod _serde {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub partition_specs: Option<Vec<PartitionSpec>>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        pub default_spec_id: Option<i32>,
+        pub default_spec_id: Option<PartitionSpecId>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub last_partition_id: Option<PartitionFieldId>,
         #[serde(skip_serializing_if = "Option::is_none")]

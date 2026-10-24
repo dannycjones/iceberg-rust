@@ -24,8 +24,8 @@ use typed_builder::TypedBuilder;
 use crate::error::invalid_data;
 use crate::expr::BoundPredicate;
 use crate::spec::{
-    DataContentType, DataFileFormat, FieldId, ManifestEntryRef, NameMapping, PartitionSpec, Schema,
-    SchemaRef, SortOrderRef, Struct, StructType,
+    DataContentType, DataFileFormat, FieldId, ManifestEntryRef, NameMapping, PartitionSpec,
+    PartitionSpecId, Schema, SchemaRef, SortOrderRef, Struct, StructType,
 };
 use crate::{Error, Result};
 
@@ -306,7 +306,7 @@ impl From<FileScanTask> for Result<FileScanTask> {
 #[derive(Debug)]
 pub(crate) struct DeleteFileContext {
     pub(crate) manifest_entry: ManifestEntryRef,
-    pub(crate) partition_spec_id: i32,
+    pub(crate) partition_spec_id: PartitionSpecId,
 }
 
 impl TryFrom<&DeleteFileContext> for FileScanTaskDeleteFile {
@@ -377,7 +377,7 @@ pub struct FileScanTaskDeleteFile {
     file_format: DataFileFormat,
 
     /// partition id
-    partition_spec_id: i32,
+    partition_spec_id: PartitionSpecId,
 
     /// equality ids for equality deletes (null for anything other than equality-deletes)
     #[builder(default)]
@@ -438,8 +438,8 @@ mod _serde {
     use crate::error::invalid_data;
     use crate::expr::BoundPredicate;
     use crate::spec::{
-        DataContentType, DataFileFormat, FieldId, Literal, NameMapping, PartitionSpec, RawLiteral,
-        SchemaRef, SortOrderRef, StructType, Type,
+        DataContentType, DataFileFormat, FieldId, Literal, NameMapping, PartitionSpec,
+        PartitionSpecId, RawLiteral, SchemaRef, SortOrderRef, StructType, Type,
     };
     use crate::{Error, Result};
 
@@ -615,7 +615,7 @@ mod _serde {
         file_size_in_bytes: u64,
         file_type: DataContentType,
         file_format: DataFileFormat,
-        partition_spec_id: i32,
+        partition_spec_id: PartitionSpecId,
         equality_ids: Option<Vec<FieldId>>,
         #[serde(default)]
         referenced_data_file: Option<String>,
@@ -672,7 +672,7 @@ impl FileScanTaskDeleteFile {
     }
 
     /// Returns the partition spec id.
-    pub fn partition_spec_id(&self) -> i32 {
+    pub fn partition_spec_id(&self) -> PartitionSpecId {
         self.partition_spec_id
     }
 

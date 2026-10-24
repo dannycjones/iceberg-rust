@@ -25,7 +25,7 @@ use serde_derive::{Deserialize, Serialize};
 use super::ManifestFile;
 use crate::Error;
 use crate::error::{Result, invalid_data};
-use crate::spec::{FieldSummary, SnapshotId};
+use crate::spec::{FieldSummary, PartitionSpecId, SnapshotId};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(transparent)]
@@ -130,7 +130,7 @@ impl TryFrom<super::ManifestList> for ManifestListV1 {
 pub(super) struct ManifestFileV1 {
     pub manifest_path: String,
     pub manifest_length: i64,
-    pub partition_spec_id: i32,
+    pub partition_spec_id: PartitionSpecId,
     pub added_snapshot_id: SnapshotId,
     pub added_data_files_count: Option<i32>,
     pub existing_data_files_count: Option<i32>,
@@ -149,7 +149,7 @@ pub(super) struct ManifestFileV1 {
 pub(super) struct ManifestFileV2 {
     pub manifest_path: String,
     pub manifest_length: i64,
-    pub partition_spec_id: i32,
+    pub partition_spec_id: PartitionSpecId,
     #[serde(default = "v2_default_content_for_v1")]
     pub content: i32,
     #[serde(default = "v2_default_sequence_number_for_v1")]
@@ -174,7 +174,7 @@ pub(super) struct ManifestFileV2 {
 pub(super) struct ManifestFileV3 {
     pub manifest_path: String,
     pub manifest_length: i64,
-    pub partition_spec_id: i32,
+    pub partition_spec_id: PartitionSpecId,
     #[serde(default = "v2_default_content_for_v1")]
     pub content: i32,
     #[serde(default = "v2_default_sequence_number_for_v1")]
