@@ -29,6 +29,7 @@ use parquet::file::metadata::ParquetMetaData;
 use parquet::schema::types::SchemaDescriptor;
 
 use super::{ArrowReader, PredicateConverter};
+use crate::arrow::ParquetColumnIndex;
 use crate::error::Result;
 use crate::expr::BoundPredicate;
 use crate::expr::visitors::bound_predicate_visitor::visit;
@@ -42,7 +43,7 @@ impl ArrowReader {
         predicates: &BoundPredicate,
         parquet_schema: &SchemaDescriptor,
         iceberg_field_ids: &HashSet<FieldId>,
-        field_id_map: &HashMap<FieldId, usize>,
+        field_id_map: &HashMap<FieldId, ParquetColumnIndex>,
     ) -> Result<RowFilter> {
         // Collect Parquet column indices from field ids.
         // If the field id is not found in Parquet schema, it will be ignored due to schema evolution.
@@ -70,7 +71,7 @@ impl ArrowReader {
     pub(super) fn get_selected_row_group_indices(
         predicate: &BoundPredicate,
         parquet_metadata: &Arc<ParquetMetaData>,
-        field_id_map: &HashMap<FieldId, usize>,
+        field_id_map: &HashMap<FieldId, ParquetColumnIndex>,
         snapshot_schema: &Schema,
         candidate_row_groups: &[usize],
     ) -> Result<Vec<usize>> {
@@ -113,7 +114,7 @@ impl ArrowReader {
         predicate: &BoundPredicate,
         parquet_metadata: &Arc<ParquetMetaData>,
         selected_row_groups: &Option<Vec<usize>>,
-        field_id_map: &HashMap<FieldId, usize>,
+        field_id_map: &HashMap<FieldId, ParquetColumnIndex>,
         snapshot_schema: &Schema,
     ) -> Result<Option<RowSelection>> {
         let Some(column_index) = parquet_metadata.column_index() else {
@@ -242,7 +243,7 @@ mod tests {
     use tempfile::TempDir;
 
     use crate::Runtime;
-    use crate::arrow::{ArrowReader, ArrowReaderBuilder};
+    use crate::arrow::{ArrowReader, ArrowReaderBuilder, ParquetColumnIndex};
     use crate::expr::{Bind, BoundPredicate, Predicate, Reference};
     use crate::io::FileIO;
     use crate::scan::{FileScanTask, FileScanTaskDeleteFile, FileScanTaskStream};
@@ -940,7 +941,7 @@ mod tests {
             .unwrap()
     }
 
-    fn field_id_map() -> HashMap<FieldId, usize> {
+    fn field_id_map() -> HashMap<FieldId, ParquetColumnIndex> {
         let mut m = HashMap::new();
         m.insert(1_i32, 0_usize);
         m

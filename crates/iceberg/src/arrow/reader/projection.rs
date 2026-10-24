@@ -30,7 +30,7 @@ use parquet::arrow::{PARQUET_FIELD_ID_META_KEY, ProjectionMask};
 use parquet::schema::types::{SchemaDescriptor, Type as ParquetType};
 
 use super::{ArrowReader, CollectFieldIdVisitor};
-use crate::arrow::arrow_schema_to_schema;
+use crate::arrow::{ParquetColumnIndex, arrow_schema_to_schema};
 use crate::error::{Result, invalid_data};
 use crate::expr::BoundPredicate;
 use crate::expr::visitors::bound_predicate_visitor::visit;
@@ -46,7 +46,7 @@ impl ArrowReader {
         arrow_schema: &ArrowSchemaRef,
         predicate: &BoundPredicate,
         use_position_fallback: bool,
-    ) -> Result<(HashSet<FieldId>, HashMap<FieldId, usize>)> {
+    ) -> Result<(HashSet<FieldId>, HashMap<FieldId, ParquetColumnIndex>)> {
         // Collects all Iceberg field IDs referenced in the filter predicate
         let mut collector = CollectFieldIdVisitor {
             field_ids: HashSet::default(),
@@ -286,7 +286,7 @@ fn type_contains_variant(field_type: &Type) -> bool {
 /// Returns None if the Parquet file doesn't have field IDs embedded (e.g., migrated tables).
 pub(super) fn build_field_id_map(
     parquet_schema: &SchemaDescriptor,
-) -> Result<Option<HashMap<FieldId, usize>>> {
+) -> Result<Option<HashMap<FieldId, ParquetColumnIndex>>> {
     let mut column_map = HashMap::new();
 
     for (idx, field) in parquet_schema.columns().iter().enumerate() {
@@ -319,7 +319,7 @@ pub(super) fn build_field_id_map(
 pub(super) fn find_leaf_by_field_id(
     parquet_schema: &SchemaDescriptor,
     field_id: FieldId,
-) -> Option<usize> {
+) -> Option<ParquetColumnIndex> {
     parquet_schema.columns().iter().position(|col| {
         matches!(
             col.self_type(),
@@ -352,7 +352,7 @@ fn leaf_count(ty: &parquet::schema::types::Type) -> usize {
 /// fileSchema.getFields() assigning ordinal IDs to top-level fields.
 pub(super) fn build_fallback_field_id_map(
     parquet_schema: &SchemaDescriptor,
-) -> HashMap<FieldId, usize> {
+) -> HashMap<FieldId, ParquetColumnIndex> {
     let mut column_map = HashMap::new();
     let mut leaf_idx = 0;
 
@@ -376,7 +376,9 @@ pub(super) fn build_fallback_field_id_map(
 /// same depth-first order as Parquet leaf columns, so the Arrow leaf index lines up with
 /// the Parquet column index. Columns the mapping did not match carry no field-id
 /// metadata and are simply absent from the map.
-fn build_field_id_map_from_arrow_schema(arrow_schema: &ArrowSchemaRef) -> HashMap<FieldId, usize> {
+fn build_field_id_map_from_arrow_schema(
+    arrow_schema: &ArrowSchemaRef,
+) -> HashMap<FieldId, ParquetColumnIndex> {
     let mut column_map = HashMap::new();
     arrow_schema.fields().filter_leaves(|idx, field| {
         if let Some(field_id) = parquet_field_id(field) {

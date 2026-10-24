@@ -23,7 +23,9 @@ use fnv::FnvHashSet;
 use parquet::file::metadata::RowGroupMetaData;
 use parquet::file::statistics::Statistics;
 
-use crate::arrow::{get_parquet_stat_max_as_datum, get_parquet_stat_min_as_datum};
+use crate::arrow::{
+    ParquetColumnIndex, get_parquet_stat_max_as_datum, get_parquet_stat_min_as_datum,
+};
 use crate::expr::visitors::bound_predicate_visitor::{BoundPredicateVisitor, visit};
 use crate::expr::{BoundPredicate, BoundReference};
 use crate::spec::{Datum, FieldId, PrimitiveLiteral, PrimitiveType, Schema};
@@ -31,7 +33,7 @@ use crate::{Error, ErrorKind, Result};
 
 pub(crate) struct RowGroupMetricsEvaluator<'a> {
     row_group_metadata: &'a RowGroupMetaData,
-    iceberg_field_id_to_parquet_column_index: &'a HashMap<FieldId, usize>,
+    iceberg_field_id_to_parquet_column_index: &'a HashMap<FieldId, ParquetColumnIndex>,
     snapshot_schema: &'a Schema,
 }
 
@@ -42,7 +44,7 @@ const ROW_GROUP_CANT_MATCH: Result<bool> = Ok(false);
 impl<'a> RowGroupMetricsEvaluator<'a> {
     fn new(
         row_group_metadata: &'a RowGroupMetaData,
-        field_id_map: &'a HashMap<FieldId, usize>,
+        field_id_map: &'a HashMap<FieldId, ParquetColumnIndex>,
         snapshot_schema: &'a Schema,
     ) -> Self {
         Self {
@@ -59,7 +61,7 @@ impl<'a> RowGroupMetricsEvaluator<'a> {
     pub(crate) fn eval(
         filter: &'a BoundPredicate,
         row_group_metadata: &'a RowGroupMetaData,
-        field_id_map: &'a HashMap<FieldId, usize>,
+        field_id_map: &'a HashMap<FieldId, ParquetColumnIndex>,
         snapshot_schema: &'a Schema,
     ) -> Result<bool> {
         if row_group_metadata.num_rows() == 0 {
@@ -556,6 +558,7 @@ mod tests {
     use rand::Rng;
 
     use super::RowGroupMetricsEvaluator;
+    use crate::arrow::ParquetColumnIndex;
     use crate::expr::{Bind, Predicate, Reference};
     use crate::spec::{Datum, FieldId, NestedField, PrimitiveType, Schema, Type};
     use crate::{ErrorKind, Result};
@@ -1970,7 +1973,8 @@ mod tests {
         Ok(())
     }
 
-    fn build_iceberg_schema_and_field_map() -> Result<(Arc<Schema>, HashMap<FieldId, usize>)> {
+    fn build_iceberg_schema_and_field_map()
+    -> Result<(Arc<Schema>, HashMap<FieldId, ParquetColumnIndex>)> {
         let iceberg_schema = Schema::builder()
             .with_fields([
                 Arc::new(NestedField::new(

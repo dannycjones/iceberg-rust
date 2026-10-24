@@ -38,11 +38,11 @@ use super::{
     ArrowFileReader, ArrowReader, ParquetReadOptions, add_fallback_field_ids_to_arrow_schema,
     apply_name_mapping_to_arrow_schema, find_leaf_by_field_id,
 };
-use crate::arrow::build_partition_constant;
 use crate::arrow::caching_delete_file_loader::CachingDeleteFileLoader;
 use crate::arrow::int96::coerce_int96_timestamps;
 use crate::arrow::record_batch_transformer::RecordBatchTransformerBuilder;
 use crate::arrow::scan_metrics::{CountingFileRead, ScanMetrics, ScanResult};
+use crate::arrow::{ParquetColumnIndex, build_partition_constant};
 use crate::encryption::StandardKeyMetadata;
 use crate::error::{Result, invalid_data};
 use crate::expr::BoundPredicate;
@@ -709,7 +709,7 @@ impl FileScanTaskReader {
         predicate: &BoundPredicate,
         builder: &mut ParquetRecordBatchStreamBuilder<ArrowFileReader>,
         candidate_row_groups: &[usize],
-        field_id_map: &HashMap<FieldId, usize>,
+        field_id_map: &HashMap<FieldId, ParquetColumnIndex>,
     ) -> Result<Vec<usize>> {
         // Only collect field IDs from eq/in predicates — the only types
         // bloom filters can help with. Skip columns not in the parquet schema.

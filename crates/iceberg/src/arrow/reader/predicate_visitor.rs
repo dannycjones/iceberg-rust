@@ -34,7 +34,7 @@ use arrow_string::like::starts_with;
 use fnv::FnvHashSet;
 use parquet::schema::types::SchemaDescriptor;
 
-use crate::arrow::{ArrowFieldIndex, get_arrow_datum};
+use crate::arrow::{ArrowFieldIndex, ParquetColumnIndex, get_arrow_datum};
 use crate::error::{Result, invalid_data};
 use crate::expr::visitors::bound_predicate_visitor::BoundPredicateVisitor;
 use crate::expr::{BoundPredicate, BoundReference};
@@ -200,9 +200,9 @@ pub(super) struct PredicateConverter<'a> {
     /// The Parquet schema descriptor.
     pub(super) parquet_schema: &'a SchemaDescriptor,
     /// The map between field id and leaf column index in Parquet schema.
-    pub(super) column_map: &'a HashMap<FieldId, usize>,
+    pub(super) column_map: &'a HashMap<FieldId, ParquetColumnIndex>,
     /// The required column indices in Parquet schema for the predicates.
-    pub(super) column_indices: &'a Vec<usize>,
+    pub(super) column_indices: &'a Vec<ParquetColumnIndex>,
 }
 
 impl PredicateConverter<'_> {
