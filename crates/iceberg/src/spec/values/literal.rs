@@ -426,14 +426,19 @@ impl Literal {
                             .ok_or(invalid_data!("Failed to convert json number to long"))?,
                     ))))
                 }
-                (PrimitiveType::Float, JsonValue::Number(number)) => Ok(Some(Literal::Primitive(
-                    PrimitiveLiteral::Float(OrderedFloat(
-                        number
-                            .as_f64()
-                            .ok_or(invalid_data!("Failed to convert json number to float"))?
-                            as f32,
-                    )),
-                ))),
+                (PrimitiveType::Float, JsonValue::Number(number)) => {
+                    let float = number
+                        .as_f64()
+                        .ok_or(invalid_data!("Failed to convert json number to 64-bit float"))?
+                        as f32;
+                    if float.is_infinite() {
+                        return Err(invalid_data!(
+                            "Failed to convert json number {number} to 32-bit float: out of range"
+                        ));
+                    }
+                    Ok(Some(Literal::float(float)))
+                }
+                // `Number::as_f64` never returns NaN or infinity, so a double needs no range check.
                 (PrimitiveType::Double, JsonValue::Number(number)) => Ok(Some(Literal::Primitive(
                     PrimitiveLiteral::Double(OrderedFloat(
                         number
@@ -633,13 +638,17 @@ impl Literal {
                 (PrimitiveType::Float, PrimitiveLiteral::Float(val)) => {
                     match Number::from_f64(val.0 as f64) {
                         Some(number) => Ok(JsonValue::Number(number)),
-                        None => Ok(JsonValue::Null),
+                        None => Err(invalid_data!(
+                            "Cannot convert float {val} to json: JSON cannot represent non-finite values"
+                        )),
                     }
                 }
                 (PrimitiveType::Double, PrimitiveLiteral::Double(val)) => {
                     match Number::from_f64(val.0) {
                         Some(number) => Ok(JsonValue::Number(number)),
-                        None => Ok(JsonValue::Null),
+                        None => Err(invalid_data!(
+                            "Cannot convert double {val} to json: JSON cannot represent non-finite values"
+                        )),
                     }
                 }
                 (PrimitiveType::Date, PrimitiveLiteral::Int(val)) => {

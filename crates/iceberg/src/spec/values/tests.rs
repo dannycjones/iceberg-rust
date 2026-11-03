@@ -187,6 +187,58 @@ fn json_double() {
     );
 }
 
+#[test]
+fn json_float_rejects_number_out_of_float_range() {
+    let float = Primitive(PrimitiveType::Float);
+
+    for value in [f32::MAX, f32::MIN] {
+        let json = serde_json::from_str(&format!("{value:e}")).unwrap();
+        let literal = Literal::try_from_json(json, &float).unwrap();
+        assert_eq!(literal, Some(Literal::float(value)));
+
+        let json = literal.unwrap().try_into_json(&float).unwrap();
+        assert_eq!(
+            Literal::try_from_json(json, &float).unwrap(),
+            Some(Literal::float(value))
+        );
+    }
+
+    // Just beyond limits of f32
+    for json in ["1e39", "-1e39"] {
+        let error =
+            Literal::try_from_json(serde_json::from_str(json).unwrap(), &float).unwrap_err();
+        assert_eq!(error.kind(), ErrorKind::DataInvalid, "{error}");
+    }
+}
+
+#[test]
+fn json_rejects_writing_non_finite_float_and_double() {
+    for (literal, ty) in [
+        (Literal::float(f32::NAN), PrimitiveType::Float),
+        (Literal::float(f32::INFINITY), PrimitiveType::Float),
+        (Literal::float(f32::NEG_INFINITY), PrimitiveType::Float),
+        (Literal::double(f64::NAN), PrimitiveType::Double),
+        (Literal::double(f64::INFINITY), PrimitiveType::Double),
+        (Literal::double(f64::NEG_INFINITY), PrimitiveType::Double),
+    ] {
+        let error = literal
+            .clone()
+            .try_into_json(&Primitive(ty.clone()))
+            .unwrap_err();
+        assert_eq!(
+            error.kind(),
+            ErrorKind::DataInvalid,
+            "writing {literal:?} as {ty} returned the wrong error kind: {error}"
+        );
+        assert!(
+            error
+                .to_string()
+                .contains("JSON cannot represent non-finite values"),
+            "error message is different from the expected error message when writing {literal:?} as {ty}: {error}"
+        );
+    }
+}
+
 const FLOAT_VALUES: [f32; 6] = [
     100.1,
     123.456,
